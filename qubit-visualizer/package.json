@@ -4,12 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "homepage": "https://dj-jayu.github.io/qubit_visualizer/",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d dist"
+},
   "dependencies": {
     "better-react-mathjax": "^2.3.0",
     "react": "^19.1.1",
