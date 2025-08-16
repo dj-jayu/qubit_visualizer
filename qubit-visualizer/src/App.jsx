@@ -36,7 +36,6 @@ export default function App() {
 
   const math = useMemo(() => computeGate(alpha, beta, gate), [alpha, beta, gate]);
   const currentGateInfo = GATE_INFO[gate.type];
-  console.log("Debugging nameLatex:", currentGateInfo?.nameLatex);
 
   const onPreset = (key) => {
     const p = presets[key];
@@ -168,8 +167,8 @@ export default function App() {
               <section className="panel flex flex-col gap-3 items-center">
                 <div className="panel-header justify-between w-full">
                   <h3 className="text-xl text-white">
-                    <MathJax>
-                      {String.raw`Final State: $${currentGateInfo?.nameLatex ?? gate.type} |\psi\rangle$`}
+                    <MathJax dynamic>
+                      {`Final State: $${currentGateInfo?.nameLatex ?? gate.type} |\\psi\\rangle$`}
                     </MathJax>
                   </h3>
                   <div className="text-xs text-slate-400">
