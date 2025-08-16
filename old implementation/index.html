@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Qubit Gate Visualization</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Math + 3D -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0b1220; /* deeper slate for contrast */
+      --panel: #111827; /* slate-900 */
+      --panel-2: #1f2937; /* slate-800 */
+      --border: #334155; /* slate-700 */
+      --ink: #e5e7eb; /* slate-200 */
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(99,102,241,.14), transparent 60%),
+                  radial-gradient(1000px 600px at 110% 0%, rgba(34,197,94,.10), transparent 60%),
+                  var(--bg);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+    .font-mono { font-family: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .panel-header {
+      display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem;
+    }
+    .panel-header h3 { font-weight: 800; }
+
+    .canvas-container { position: relative; width: 120px; height: 120px; background-color: var(--panel-2); border: 1px solid var(--border); border-radius: .75rem; }
+    .bloch-sphere-container { width: 100%; min-height: 380px; height: 45vh; cursor: grab; }
+    .bloch-sphere-container:active { cursor: grabbing; }
+    canvas { display: block; }
+
+    .calculation-row { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: .25rem; flex-wrap: wrap; }
+    .op-symbol { font-size: 1.25rem; font-weight: 700; color: #9ca3af; }
+
+    .btn { background-color: #111827; border: 1px solid var(--border); color: var(--ink); padding: .5rem .8rem; border-radius: .625rem; transition: .15s; font-family: 'Source Code Pro', monospace; box-shadow: 0 2px 0 rgba(0,0,0,.3) inset; }
+    .btn:hover { background-color: #1f2937; }
+    .btn:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+    .btn.active { background: linear-gradient(180deg, rgba(99,102,241,.35), rgba(99,102,241,.15)); border-color: #6366f1; color: white; }
+
+    /* nicer range inputs */
+    input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; }
+    input[type=range]::-webkit-slider-runnable-track { height: .5rem; background: #374151; border-radius: 9999px; border: 1px solid #4b5563; }
+    input[type=range]::-moz-range-track { height: .5rem; background: #374151; border-radius: 9999px; border: 1px solid #4b5563; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1rem; height: 1rem; background: white; border-radius: 9999px; margin-top: -0.25rem; box-shadow: 0 0 0 2px #6366f1 inset; }
+    input[type=range]::-moz-range-thumb { width: 1rem; height: 1rem; background: white; border: none; border-radius: 9999px; box-shadow: 0 0 0 2px #6366f1 inset; }
+
+    /* compact on mobile */
+    @media (max-width: 640px) {
+      .canvas-container { width: 96px; height: 96px; }
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div class="max-w-screen-2xl mx-auto">
+    <!-- HEADER -->
+    <header class="mb-6 md:mb-8">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 id="main-title" class="text-3xl md:text-4xl font-extrabold tracking-tight text-white"></h1>
+          <p id="main-subtitle" class="text-base md:text-lg text-slate-400 mt-2"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="reset-btn" type="button" class="btn">Reset</button>
+          <button id="randomize-btn" type="button" class="btn">Randomize</button>
+        </div>
+      </div>
+      <div id="status-line" class="sr-only" aria-live="polite"></div>
+    </header>
+
+    <!-- LAYOUT: sticky controls (left) + visualization (right) -->
+    <div class="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
+      <!-- LEFT: Controls -->
+      <aside class="xl:sticky xl:top-6 h-max space-y-6">
+        <!-- Custom Initial State -->
+        <section class="panel" aria-labelledby="custom-state-title">
+          <div class="panel-header">
+            <h3 id="custom-state-title" class="text-xl text-white">1) Custom Initial State \(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle\)</h3>
+          </div>
+          <div class="flex flex-col gap-3 p-1">
+            <div class="flex items-center gap-4">
+              <p class="font-mono text-xl text-indigo-300 w-16 text-center">\(\alpha\)</p>
+              <div class="flex-grow">
+                <label for="alpha-phase-slider" class="block text-sm font-medium text-slate-300">Phase \(\phi_\alpha\)</label>
+                <input id="alpha-phase-slider" type="range" min="0" max="6.283" step="0.01" value="0" aria-label="Alpha phase" />
+                <span id="alpha-phase-value" class="block text-right font-mono text-indigo-400 text-sm">0.00 rad</span>
+              </div>
+            </div>
+
+            <div>
+              <label for="magnitude-slider" class="block text-sm font-medium text-slate-300 text-center">Magnitudes</label>
+              <input id="magnitude-slider" type="range" min="0" max="1.5708" step="0.01" value="0.7854" aria-label="Magnitude balance of alpha and beta" />
+              <div class="flex justify-between font-mono text-sm">
+                <span id="alpha-mag-value" class="text-indigo-400">|\(\alpha\)| = 0.71</span>
+                <span id="beta-mag-value" class="text-teal-400">|\(\beta\)| = 0.71</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <p class="font-mono text-xl text-teal-300 w-16 text-center">\(\beta\)</p>
+              <div class="flex-grow">
+                <label for="beta-phase-slider" class="block text-sm font-medium text-slate-300">Phase \(\phi_\beta\)</label>
+                <input id="beta-phase-slider" type="range" min="0" max="6.283" step="0.01" value="0" aria-label="Beta phase" />
+                <span id="beta-phase-value" class="block text-right font-mono text-teal-400 text-sm">0.00 rad</span>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-slate-300 text-center mb-2">Initial State Presets</label>
+              <div id="initial-state-buttons" class="flex flex-wrap gap-2 justify-center">
+                <button class="btn" type="button" data-state="0">\(|0\rangle\)</button>
+                <button class="btn" type="button" data-state="1">\(|1\rangle\)</button>
+                <button class="btn" type="button" data-state="+">\(|+\rangle\)</button>
+                <button class="btn" type="button" data-state="-">\(|-\rangle\)</button>
+                <button class="btn" type="button" data-state="i">\(|i\rangle\)</button>
+                <button class="btn" type="button" data-state="-i">\(|-i\rangle\)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Gate selection + params in one card -->
+        <section class="panel" aria-labelledby="gate-select-title">
+          <div class="panel-header">
+            <h3 id="gate-select-title" class="text-xl text-white">2) Select Gate</h3>
+          </div>
+          <div id="gate-select-buttons" class="flex flex-wrap gap-2 justify-center">
+            <button class="btn" type="button" data-gate="RV">\(RV(v_x,v_y,v_z)\)</button>
+            <button class="btn" type="button" data-gate="U">\(U(\theta,\phi,\lambda)\)</button>
+            <button class="btn" type="button" data-gate="P">\(P(\theta)\)</button>
+            <button class="btn" type="button" data-gate="R">\(R(\theta,\phi)\)</button>
+            <button class="btn" type="button" data-gate="Rx">\(R_x(\theta)\)</button>
+            <button class="btn" type="button" data-gate="Ry">\(R_y(\theta)\)</button>
+            <button class="btn" type="button" data-gate="Rz">\(R_z(\theta)\)</button>
+            <button class="btn" type="button" data-gate="X">\(X\)</button>
+            <button class="btn" type="button" data-gate="Y">\(Y\)</button>
+            <button class="btn" type="button" data-gate="Z">\(Z\)</button>
+            <button class="btn" type="button" data-gate="S">\(S\)</button>
+            <button class="btn" type="button" data-gate="T">\(T\)</button>
+          </div>
+
+          <div id="gate-params-container" class="mt-5"></div>
+          <div id="gate-matrix-display" class="mt-5 text-center text-lg"></div>
+        </section>
+      </aside>
+
+      <!-- RIGHT: Visualization & math -->
+      <main class="space-y-6">
+        <!-- Bloch spheres side-by-side -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section class="panel flex flex-col gap-3 items-center">
+            <div class="panel-header justify-between w-full">
+              <h3 class="text-xl text-white">Initial State: \(|\psi\rangle\)</h3>
+              <div class="text-xs text-slate-400">\(|\alpha|^2, |\beta|^2\): <span id="initial-probs" class="font-mono text-slate-300">—</span></div>
+            </div>
+            <div id="bloch-sphere-initial" class="bloch-sphere-container"></div>
+          </section>
+
+          <section class="panel flex flex-col gap-3 items-center">
+            <div class="panel-header justify-between w-full">
+              <h3 id="final-state-title" class="text-xl text-white"></h3>
+              <div class="text-xs text-slate-400">\(|\alpha'|^2, |\beta'|^2\): <span id="final-probs" class="font-mono text-slate-300">—</span></div>
+            </div>
+            <div id="bloch-sphere-final" class="bloch-sphere-container"></div>
+          </section>
+        </div>
+
+        <!-- Collapsible calculation details -->
+        <section class="panel">
+          <details id="calc-details" class="group" open>
+            <summary class="cursor-pointer select-none list-none flex items-center justify-between">
+              <h3 class="text-xl font-extrabold text-white">3) Final State Calculation</h3>
+              <span class="text-slate-400 text-sm">(click to collapse)</span>
+            </summary>
+            <div class="mt-4 flex flex-col items-center gap-4">
+              <div class="w-full">
+                <p id="alpha-equation" class="text-center font-mono text-lg mb-2 text-indigo-400 min-h-8"></p>
+                <div class="calculation-row">
+                  <div class="w-16 text-center font-mono text-xl text-slate-400 flex items-center justify-center"><p>\(|0\rangle\)</p></div>
+                  <div class="text-center"><p class="font-mono text-xs">Initial \(\alpha\)</p><div class="canvas-container mt-1"><canvas id="initial-alpha-ref" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">&rarr;</span>
+                  <div class="text-center"><p id="alpha-calc-term1-label" class="font-mono text-xs min-h-4"></p><div class="canvas-container mt-1"><canvas id="alpha-term1" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">+</span>
+                  <div class="text-center"><p id="alpha-calc-term2-label" class="font-mono text-xs min-h-4"></p><div class="canvas-container mt-1"><canvas id="alpha-term2" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">=</span>
+                  <div class="text-center"><p class="font-mono text-xs">\(\alpha'\)</p><div class="canvas-container mt-1"><canvas id="final-alpha" width="120" height="120"></canvas></div></div>
+                </div>
+              </div>
+
+              <div class="w-full">
+                <p id="beta-equation" class="text-center font-mono text-lg mb-2 text-teal-400 min-h-8"></p>
+                <div class="calculation-row">
+                  <div class="w-16 text-center font-mono text-xl text-slate-400 flex items-center justify-center"><p>\(|1\rangle\)</p></div>
+                  <div class="text-center"><p class="font-mono text-xs">Initial \(\beta\)</p><div class="canvas-container mt-1"><canvas id="initial-beta-ref" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">&rarr;</span>
+                  <div class="text-center"><p id="beta-calc-term1-label" class="font-mono text-xs min-h-4"></p><div class="canvas-container mt-1"><canvas id="beta-term1" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">+</span>
+                  <div class="text-center"><p id="beta-calc-term2-label" class="font-mono text-xs min-h-4"></p><div class="canvas-container mt-1"><canvas id="beta-term2" width="120" height="120"></canvas></div></div>
+                  <span class="op-symbol">=</span>
+                  <div class="text-center"><p class="font-mono text-xs">\(\beta'\)</p><div class="canvas-container mt-1"><canvas id="final-beta" width="120" height="120"></canvas></div></div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // --- State Management ---
+    const state = {
+      gateType: 'U',
+      theta: Math.PI, phi: 0, lambda: 0,
+      vx: 1, vy: 0, vz: 0,
+      magnitudeAngle: 0, alphaPhase: 0, betaPhase: 0,
+      angleUnit: 'rad', // 'rad' or 'deg'
+    };
+    const initialAmplitudes = { alpha: { re: 0, im: 0 }, beta: { re: 0, im: 0 } };
+    const PI = Math.PI;
+
+    const presetStates = {
+      '0': { magnitudeAngle: 0, alphaPhase: 0, betaPhase: 0 },
+      '1': { magnitudeAngle: PI / 2, alphaPhase: 0, betaPhase: 0 },
+      '+': { magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: 0 },
+      '-': { magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: PI },
+      'i': { magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: PI / 2 },
+      '-i': { magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: 3 * PI / 2 }
+    };
+
+    
+    function makeLabelSprite(text, color = '#e5e7eb') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Big, bold text with a soft outline for contrast
+      ctx.font = 'bold 180px Inter, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillStyle = color;
+
+      // Slight vertical offset centers the glyphs nicely
+      const cx = canvas.width / 2, cy = canvas.height / 2 + 12;
+      ctx.strokeText(text, cx, cy);
+      ctx.fillText(text, cx, cy);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter; // keeps it sharp
+      tex.generateMipmaps = false;
+
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex, transparent: true
+      }));
+      sprite.scale.set(0.30, 0.30, 1); // world units
+      return sprite;
+    }
+
+
+    // --- 2D Canvas Drawing Logic ---
+    function drawPlane(canvasId, vector, color = '#fbbf24') {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width; const h = canvas.height; const center = { x: w / 2, y: h / 2 }; const scale = w / 2.2;
+      ctx.clearRect(0, 0, w, h);
+      ctx.beginPath(); ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 1;
+      ctx.moveTo(0, center.y); ctx.lineTo(w, center.y);
+      ctx.moveTo(center.x, 0); ctx.lineTo(center.x, h); ctx.stroke();
+      ctx.fillStyle = '#6b7280'; ctx.font = '10px sans-serif'; ctx.fillText('Re', w - 15, center.y - 5); ctx.fillText('Im', center.x + 5, 12);
+      const magnitude = Math.sqrt(vector.re * vector.re + vector.im * vector.im);
+      if (magnitude < 0.01) { ctx.beginPath(); ctx.arc(center.x, center.y, 2, 0, 2 * PI); ctx.fillStyle = color; ctx.fill(); return; }
+      const start = { x: center.x, y: center.y };
+      const end = { x: center.x + vector.re * scale, y: center.y - vector.im * scale };
+      ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - 10 * Math.cos(angle - PI / 6), end.y - 10 * Math.sin(angle - PI / 6));
+      ctx.lineTo(end.x - 10 * Math.cos(angle + PI / 6), end.y - 10 * Math.sin(angle + PI / 6));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    // --- Bloch Sphere Logic ---
+    const blochSpheres = {};
+    function createBlochSphereInstance(containerId, vectorColor = 0xfbbf24) {
+      const container = document.getElementById(containerId);
+      if (!container) return null;
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(2.5, 1.5, 3.5);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; controls.dampingFactor = 0.1;
+      const sphereGeom = new THREE.SphereGeometry(1, 32, 16);
+      const sphereMat = new THREE.MeshBasicMaterial({ color: 0x4f46e5, wireframe: true, transparent: true, opacity: 0.2 });
+      scene.add(new THREE.Mesh(sphereGeom, sphereMat));
+      const axesGeom = new THREE.BufferGeometry(); const axesMat = new THREE.LineBasicMaterial({ vertexColors: true });
+      const positions = [-1.3,0,0, 1.3,0,0, 0,-1.3,0, 0,1.3,0, 0,0,-1.3, 0,0,1.3];
+      const colors = [1,0.2,0.2, 1,0.2,0.2, 0.2,1,0.2, 0.2,1,0.2, 0.2,0.2,1, 0.2,0.2,1];
+      axesGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      axesGeom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      scene.add(new THREE.LineSegments(axesGeom, axesMat));
+      // Axis labels at +X, +Y, +Z (match axis colors: red, green, blue)
+      const labels = new THREE.Group();
+      const labelX = makeLabelSprite('x', '#f87171'); // red-ish
+      const labelY = makeLabelSprite('y', '#34d399'); // green-ish
+      const labelZ = makeLabelSprite('z', '#60a5fa'); // blue-ish
+      labelX.position.set(1.45, 0, 0);
+      labelZ.position.set(0, 1.45, 0);
+      labelY.position.set(0, 0, 1.45);
+
+      labels.add(labelX, labelY, labelZ);
+      scene.add(labels);
+
+      const vecGeom = new THREE.CylinderGeometry(0.02, 0.02, 1, 8);
+      const vecMat = new THREE.MeshBasicMaterial({ color: vectorColor });
+      const vectorBody = new THREE.Mesh(vecGeom, vecMat); vectorBody.position.y = 0.5;
+      const headGeom = new THREE.ConeGeometry(0.06, 0.15, 8); const headMat = new THREE.MeshBasicMaterial({ color: vectorColor });
+      const vectorHead = new THREE.Mesh(headGeom, headMat); vectorHead.position.y = 1;
+      const stateVector = new THREE.Group(); stateVector.add(vectorBody); stateVector.add(vectorHead); scene.add(stateVector);
+      return { scene, camera, renderer, controls, stateVector, container };
+    }
+    function resizeBlochSpheres() {
+      for (const key in blochSpheres) {
+        const sphere = blochSpheres[key]; if (!sphere) continue;
+        const { camera, renderer, container } = sphere;
+        const width = container.clientWidth; const height = container.clientHeight;
+        camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height);
+      }
+    }
+    function animateBlochSpheres() {
+      requestAnimationFrame(animateBlochSpheres);
+      for (const key in blochSpheres) { const sphere = blochSpheres[key]; if (!sphere) continue; sphere.controls.update(); sphere.renderer.render(sphere.scene, sphere.camera); }
+    }
+    function updateBlochSphere(stateVector, alpha, beta) {
+      if (!stateVector) return;
+      const z_bloch = alpha.re*alpha.re + alpha.im*alpha.im - (beta.re*beta.re + beta.im*beta.im);
+      const x_bloch = 2 * (alpha.re*beta.re + alpha.im*beta.im);
+      const y_bloch = 2 * (alpha.im*beta.re - alpha.re*beta.im);
+      const targetPosition = new THREE.Vector3(x_bloch, z_bloch, -y_bloch);
+      stateVector.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), targetPosition.clone().normalize());
+    }
+
+    // --- Main Calculation and Update Logic ---
+    function updateInitialState() {
+      const mag_alpha = Math.cos(state.magnitudeAngle);
+      const mag_beta = Math.sin(state.magnitudeAngle);
+
+      initialAmplitudes.alpha.re = mag_alpha * Math.cos(state.alphaPhase);
+      initialAmplitudes.alpha.im = mag_alpha * Math.sin(state.alphaPhase);
+      initialAmplitudes.beta.re = mag_beta * Math.cos(state.betaPhase);
+      initialAmplitudes.beta.im = mag_beta * Math.sin(state.betaPhase);
+
+      document.getElementById('alpha-mag-value').innerHTML = `|\\(\\alpha\\)| = ${mag_alpha.toFixed(2)}`;
+      document.getElementById('beta-mag-value').innerHTML = `|\\(\\beta\\)| = ${mag_beta.toFixed(2)}`;
+      document.getElementById('alpha-phase-value').textContent = `${state.alphaPhase.toFixed(2)} rad`;
+      document.getElementById('beta-phase-value').textContent = `${state.betaPhase.toFixed(2)} rad`;
+
+      if (window.MathJax) {
+        MathJax.typesetPromise([document.getElementById('alpha-mag-value'), document.getElementById('beta-mag-value')]);
+      }
+
+      updateVisualization();
+    }
+
+    function updateSlidersFromState() {
+      document.getElementById('magnitude-slider').value = state.magnitudeAngle;
+      document.getElementById('alpha-phase-slider').value = state.alphaPhase;
+      document.getElementById('beta-phase-slider').value = state.betaPhase;
+      updateInitialState();
+    }
+
+    function probText(a, b) {
+      const p0 = (a.re*a.re + a.im*a.im).toFixed(3);
+      const p1 = (b.re*b.re + b.im*b.im).toFixed(3);
+      return `|0⟩=${p0}, |1⟩=${p1}`;
+    }
+
+    function updateVisualization() {
+      const { alpha, beta } = initialAmplitudes;
+      const { gateType, theta, phi, lambda } = state;
+      let alpha_term1, alpha_term2, beta_term1, beta_term2;
+
+      const cos_t2 = Math.cos(theta / 2);
+      const sin_t2 = Math.sin(theta / 2);
+
+      if (gateType === 'RV') {
+        const { vx, vy, vz } = state;
+        const norm_v = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        if (norm_v < 1e-9) {
+          alpha_term1 = alpha; alpha_term2 = { re: 0, im: 0 };
+          beta_term1 = { re: 0, im: 0 }; beta_term2 = beta;
+        } else {
+          const angle = norm_v;
+          const cos_a2 = Math.cos(angle / 2);
+          const sin_a2 = Math.sin(angle / 2);
+          const nx = vx / norm_v; const ny = vy / norm_v; const nz = vz / norm_v;
+          const m00 = { re: cos_a2,        im: -nz * sin_a2 };
+          const m01 = { re: -ny * sin_a2,  im: -nx * sin_a2 };
+          const m10 = { re:  ny * sin_a2,  im: -nx * sin_a2 };
+          const m11 = { re: cos_a2,        im:  nz * sin_a2 };
+          alpha_term1 = { re: m00.re * alpha.re - m00.im * alpha.im, im: m00.re * alpha.im + m00.im * alpha.re };
+          alpha_term2 = { re: m01.re * beta.re  - m01.im * beta.im,  im: m01.re * beta.im  + m01.im * beta.re };
+          beta_term1  = { re: m10.re * alpha.re - m10.im * alpha.im, im: m10.re * alpha.im + m10.im * alpha.re };
+          beta_term2  = { re: m11.re * beta.re  - m11.im * beta.im,  im: m11.re * beta.im  + m11.im * beta.re };
+        }
+      } else if (gateType === 'U') {
+        const term1_alpha = { re: alpha.re * cos_t2, im: alpha.im * cos_t2 };
+        const neg_e_ilambda = { re: -Math.cos(lambda), im: -Math.sin(lambda) };
+        const term1_beta_factor = { re: neg_e_ilambda.re * sin_t2, im: neg_e_ilambda.im * sin_t2 };
+        const term1_beta = { re: term1_beta_factor.re * beta.re - term1_beta_factor.im * beta.im, im: term1_beta_factor.re * beta.im + term1_beta_factor.im * beta.re };
+        const e_iphi = { re: Math.cos(phi), im: Math.sin(phi) };
+        const term2_alpha_factor = { re: e_iphi.re * sin_t2, im: e_iphi.im * sin_t2 };
+        const term2_alpha = { re: term2_alpha_factor.re * alpha.re - term2_alpha_factor.im * alpha.im, im: term2_alpha_factor.re * alpha.im + term2_alpha_factor.im * alpha.re };
+        const e_iphi_lambda = { re: Math.cos(phi + lambda), im: Math.sin(phi + lambda) };
+        const term2_beta_factor = { re: e_iphi_lambda.re * cos_t2, im: e_iphi_lambda.im * cos_t2 };
+        const term2_beta = { re: term2_beta_factor.re * beta.re - term2_beta_factor.im * beta.im, im: term2_beta_factor.re * beta.im + term2_beta_factor.im * beta.re };
+        alpha_term1 = term1_alpha; alpha_term2 = term1_beta;
+        beta_term1 = term2_alpha; beta_term2 = term2_beta;
+      } else if (gateType === 'P') {
+        const e_itheta = {re: Math.cos(theta), im: Math.sin(theta)};
+        alpha_term1 = alpha; alpha_term2 = {re: 0, im: 0};
+        beta_term1 = {re: 0, im: 0};
+        beta_term2 = { re: beta.re * e_itheta.re - beta.im * e_itheta.im, im: beta.re * e_itheta.im + beta.im * e_itheta.re };
+      } else if (gateType === 'R') {
+        const neg_ie_neg_iphi = {re: -Math.sin(phi), im: -Math.cos(phi)}; // -i*e^(-i*phi)
+        const term1_beta_factor = { re: neg_ie_neg_iphi.re * sin_t2, im: neg_ie_neg_iphi.im * sin_t2 };
+        const term1_beta = { re: term1_beta_factor.re * beta.re - term1_beta_factor.im * beta.im, im: term1_beta_factor.re * beta.im + term1_beta_factor.im * beta.re };
+        const neg_ie_iphi = {re: Math.sin(phi), im: -Math.cos(phi)}; // -i*e^(i*phi)
+        const term2_alpha_factor = { re: neg_ie_iphi.re * sin_t2, im: neg_ie_iphi.im * sin_t2 };
+        const term2_alpha = { re: term2_alpha_factor.re * alpha.re - term2_alpha_factor.im * alpha.im, im: term2_alpha_factor.re * alpha.im + term2_alpha_factor.im * alpha.re };
+        alpha_term1 = { re: alpha.re * cos_t2, im: alpha.im * cos_t2 };
+        alpha_term2 = term1_beta;
+        beta_term1 = term2_alpha;
+        beta_term2 = { re: beta.re * cos_t2, im: beta.im * cos_t2 };
+      } else {
+        let temp_theta = theta;
+        if (gateType === 'Rx' || gateType === 'Ry' || gateType === 'Rz') { temp_theta = state.theta; }
+        else if (gateType === 'X' || gateType === 'Y') { temp_theta = PI; }
+        else { temp_theta = 0; }
+        const cos_t2_fixed = Math.cos(temp_theta / 2);
+        const sin_t2_fixed = Math.sin(temp_theta / 2);
+        if (gateType === 'Rx') {
+          alpha_term1 = { re: alpha.re * cos_t2_fixed, im: alpha.im * cos_t2_fixed };
+          alpha_term2 = { re: beta.im * sin_t2_fixed, im: -beta.re * sin_t2_fixed };
+          beta_term1 = { re: alpha.im * sin_t2_fixed, im: -alpha.re * sin_t2_fixed };
+          beta_term2 = { re: beta.re * cos_t2_fixed, im: beta.im * cos_t2_fixed };
+        } else if (gateType === 'Ry') {
+          alpha_term1 = { re: alpha.re * cos_t2_fixed, im: alpha.im * cos_t2_fixed };
+          alpha_term2 = { re: -beta.re * sin_t2_fixed, im: -beta.im * sin_t2_fixed };
+          beta_term1 = { re: alpha.re * sin_t2_fixed, im: alpha.im * sin_t2_fixed };
+          beta_term2 = { re: beta.re * cos_t2_fixed, im: beta.im * cos_t2_fixed };
+        } else if (gateType === 'Rz') {
+          const exp_neg_it2 = { re: cos_t2_fixed, im: -sin_t2_fixed };
+          const exp_pos_it2 = { re: cos_t2_fixed, im:  sin_t2_fixed };
+          alpha_term1 = { re: exp_neg_it2.re * alpha.re - exp_neg_it2.im * alpha.im, im: exp_neg_it2.re * alpha.im + exp_neg_it2.im * alpha.re };
+          alpha_term2 = { re: 0, im: 0 };
+          beta_term1 = { re: 0, im: 0 };
+          beta_term2 = { re: exp_pos_it2.re * beta.re - exp_pos_it2.im * beta.im, im: exp_pos_it2.re * beta.im + exp_pos_it2.im * beta.re };
+        } else if (gateType === 'X') {
+          alpha_term1 = { re: 0, im: 0 }; alpha_term2 = beta;
+          beta_term1 = alpha; beta_term2 = { re: 0, im: 0 };
+        } else if (gateType === 'Y') {
+          alpha_term1 = { re: 0, im: 0 }; alpha_term2 = { re: beta.im, im: -beta.re };
+          beta_term1 = { re: -alpha.im, im: alpha.re }; beta_term2 = { re: 0, im: 0 };
+        } else if (gateType === 'Z') {
+          alpha_term1 = alpha; alpha_term2 = { re: 0, im: 0 };
+          beta_term1 = { re: 0, im: 0 }; beta_term2 = { re: -beta.re, im: -beta.im };
+        } else if (gateType === 'S') {
+          alpha_term1 = alpha; alpha_term2 = { re: 0, im: 0 };
+          beta_term1 = { re: 0, im: 0 }; beta_term2 = { re: -beta.im, im: beta.re };
+        } else if (gateType === 'T') {
+          const inv_sqrt2 = 1 / Math.sqrt(2);
+          alpha_term1 = alpha; alpha_term2 = { re: 0, im: 0 };
+          beta_term1 = { re: 0, im: 0 };
+          beta_term2 = { re: (beta.re - beta.im) * inv_sqrt2, im: (beta.re + beta.im) * inv_sqrt2 };
+        }
+      }
+
+      const final_alpha = { re: alpha_term1.re + alpha_term2.re, im: alpha_term1.im + alpha_term2.im };
+      const final_beta  = { re: beta_term1.re + beta_term2.re,   im: beta_term1.im + beta_term2.im };
+
+      // 2D planes
+      drawPlane('initial-alpha-ref', alpha, '#818cf8');
+      drawPlane('initial-beta-ref',  beta,  '#2dd4bf');
+      drawPlane('alpha-term1', alpha_term1, '#a5b4fc');
+      drawPlane('alpha-term2', alpha_term2, '#a5b4fc');
+      drawPlane('final-alpha', final_alpha,  '#6366f1');
+      drawPlane('beta-term1',  beta_term1,  '#5eead4');
+      drawPlane('beta-term2',  beta_term2,  '#5eead4');
+      drawPlane('final-beta',  final_beta,  '#14b8a6');
+
+      // Probabilities display
+      document.getElementById('initial-probs').textContent = probText(alpha, beta);
+      document.getElementById('final-probs').textContent   = probText(final_alpha, final_beta);
+
+      // Bloch spheres
+      updateBlochSphere(blochSpheres.initial?.stateVector, alpha, beta);
+      updateBlochSphere(blochSpheres.final?.stateVector, final_alpha, final_beta);
+    }
+
+    function updateUIForGate() {
+      const { gateType } = state;
+      let gateName, matrixHtml;
+      const paramsContainer = document.getElementById('gate-params-container');
+
+      const gateInfo = {
+        'RV': {
+          name: 'RV(v_x, v_y, v_z)',
+          matrix: `$$R(\\vec{v}) = \\begin{pmatrix} c - i n_z s & -n_y s - i n_x s \\\\ n_y s - i n_x s & c + i n_z s \\end{pmatrix}$$ <div class="text-xs mt-2">\\(c=\\cos(\\tfrac{\\|\\vec{v}\\|}{2}), s=\\sin(\\tfrac{\\|\\vec{v}\\|}{2}), n_k = v_k/\\|\\vec{v}\\|\\)</div>`,
+          alphaEq: '\\(\\alpha\' = (c - i n_z s)\\alpha + (-n_y s - i n_x s)\\beta\\)',
+          betaEq:  '\\(\\beta\' = (n_y s - i n_x s)\\alpha + (c + i n_z s)\\beta\\)',
+          alphaTerm1: '\\((c - i n_z s)\\alpha\\)', alphaTerm2: '\\((-n_y s - i n_x s)\\beta\\)',
+          betaTerm1:  '\\((n_y s - i n_x s)\\alpha\\)', betaTerm2:  '\\((c + i n_z s)\\beta\\)',
+        },
+        'U': {
+          name: 'U(\\theta, \\phi, \\lambda)',
+          matrix: `$$U = \\begin{pmatrix} \\cos(\\theta/2) & -e^{i\\lambda}\\sin(\\theta/2) \\\\ e^{i\\phi}\\sin(\\theta/2) & e^{i(\\phi+\\lambda)}\\cos(\\theta/2) \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = \\alpha\\cos(\\theta/2) - \\beta e^{i\\lambda}\\sin(\\theta/2)\\)',
+          betaEq:  '\\(\\beta\' = \\alpha e^{i\\phi}\\sin(\\theta/2) + \\beta e^{i(\\phi+\\lambda)}\\cos(\\theta/2)\\)',
+          alphaTerm1: '\\(\\alpha\\cos(\\theta/2)\\)', alphaTerm2: '\\(-\\beta e^{i\\lambda}\\sin(\\theta/2)\\)',
+          betaTerm1:  '\\(\\alpha e^{i\\phi}\\sin(\\theta/2)\\)', betaTerm2:  '\\(\\beta e^{i(\\phi+\\lambda)}\\cos(\\theta/2)\\)',
+        },
+        'P': {
+          name: 'P(\\theta)',
+          matrix: `$$P(\\theta) = \\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\theta} \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = (1)\\alpha + (0)\\beta\\)',
+          betaEq:  '\\(\\beta\' = (0)\\alpha + (e^{i\\theta})\\beta\\)',
+          alphaTerm1: '\\((1)\\alpha\\)', alphaTerm2: '\\((0)\\beta\\)',
+          betaTerm1:  '\\((0)\\alpha\\)', betaTerm2:  '\\((e^{i\\theta})\\beta\\)',
+        },
+        'R': {
+          name: 'R(\\theta, \\phi)',
+          matrix: `$$R(\\theta, \\phi) = \\begin{pmatrix} \\cos(\\theta/2) & -ie^{-i\\phi}\\sin(\\theta/2) \\\\ -ie^{i\\phi}\\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = \\alpha\\cos(\\theta/2) -i\\beta e^{-i\\phi}\\sin(\\theta/2)\\)',
+          betaEq:  '\\(\\beta\' = -i\\alpha e^{i\\phi}\\sin(\\theta/2) + \\beta\\cos(\\theta/2)\\)',
+          alphaTerm1: '\\(\\alpha\\cos(\\theta/2)\\)', alphaTerm2: '\\(-i\\beta e^{-i\\phi}\\sin(\\theta/2)\\)',
+          betaTerm1:  '\\(-i\\alpha e^{i\\phi}\\sin(\\theta/2)\\)', betaTerm2:  '\\(\\beta\\cos(\\theta/2)\\)',
+        },
+        'Rx': { name: 'R_x(\\theta)', matrix: `$$R_x(\\theta) = \\begin{pmatrix} \\cos(\\theta/2) & -i\\sin(\\theta/2) \\\\ -i\\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = \\alpha \\cos(\\theta/2) - i\\beta \\sin(\\theta/2)\\)',
+          betaEq:  '\\(\\beta\' = -i\\alpha \\sin(\\theta/2) + \\beta \\cos(\\theta/2)\\)',
+          alphaTerm1: '\\(\\alpha \\cos(\\theta/2)\\)', alphaTerm2: '\\(-i\\beta \\sin(\\theta/2)\\)',
+          betaTerm1:  '\\(-i\\alpha \\sin(\\theta/2)\\)', betaTerm2:  '\\(\\beta \\cos(\\theta/2)\\)', },
+        'Ry': { name: 'R_y(\\theta)', matrix: `$$R_y(\\theta) = \\begin{pmatrix} \\cos(\\theta/2) & -\\sin(\\theta/2) \\\\ \\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = \\alpha \\cos(\\theta/2) - \\beta \\sin(\\theta/2)\\)',
+          betaEq:  '\\(\\beta\' = \\alpha \\sin(\\theta/2) + \\beta \\cos(\\theta/2)\\)',
+          alphaTerm1: '\\(\\alpha \\cos(\\theta/2)\\)', alphaTerm2: '\\(-\\beta \\sin(\\theta/2)\\)',
+          betaTerm1:  '\\(\\alpha \\sin(\\theta/2)\\)', betaTerm2:  '\\(\\beta \\cos(\\theta/2)\\)', },
+        'Rz': { name: 'R_z(\\theta)', matrix: `$$R_z(\\theta) = \\begin{pmatrix} e^{-i\\theta/2} & 0 \\\\ 0 & e^{i\\theta/2} \\end{pmatrix}$$`,
+          alphaEq: '\\(\\alpha\' = e^{-i\\theta/2} \\alpha\\)',
+          betaEq:  '\\(\\beta\' = e^{i\\theta/2} \\beta\\)',
+          alphaTerm1: '\\(e^{-i\\theta/2} \\alpha\\)', alphaTerm2: '\\((0)\\beta\\)',
+          betaTerm1:  '\\((0)\\alpha\\)', betaTerm2:  '\\(e^{i\\theta/2} \\beta\\)', },
+        'X':  { name: 'X', matrix: `$$X = \\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}$$`},
+        'Y':  { name: 'Y', matrix: `$$Y = \\begin{pmatrix} 0 & -i \\\\ i & 0 \\end{pmatrix}$$`},
+        'Z':  { name: 'Z', matrix: `$$Z = \\begin{pmatrix} 1 & 0 \\\\ 0 & -1 \\end{pmatrix}$$`},
+        'S':  { name: 'S', matrix: `$$S = \\begin{pmatrix} 1 & 0 \\\\ 0 & i \\end{pmatrix}$$`},
+        'T':  { name: 'T', matrix: `$$T = \\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\pi/4} \\end{pmatrix}$$`}
+      };
+
+      const currentGate = gateInfo[gateType];
+      gateName = currentGate.name; matrixHtml = currentGate.matrix;
+
+      if(!currentGate.alphaEq) {
+        const pauliMatrices = {'X': [[0,1],[1,0]], 'Y': [[0,'-i'],['i',0]], 'Z': [[1,0],[0,-1]], 'S': [[1,0],[0,'i']], 'T': [[1,0],[0,'e^{i\\pi/4}']]} ;
+        const m = pauliMatrices[gateType];
+        document.getElementById('alpha-equation').innerHTML = `\\(\\alpha' = (${m[0][0]})\\alpha + (${m[0][1]})\\beta\\)`;
+        document.getElementById('beta-equation').innerHTML  = `\\(\\beta' = (${m[1][0]})\\alpha + (${m[1][1]})\\beta\\)`;
+        document.getElementById('alpha-calc-term1-label').innerHTML = `\\((${m[0][0]})\\alpha\\)`;
+        document.getElementById('alpha-calc-term2-label').innerHTML = `\\((${m[0][1]})\\beta\\)`;
+        document.getElementById('beta-calc-term1-label').innerHTML  = `\\((${m[1][0]})\\alpha\\)`;
+        document.getElementById('beta-calc-term2-label').innerHTML  = `\\((${m[1][1]})\\beta\\)`;
+      } else {
+        document.getElementById('alpha-equation').innerHTML = currentGate.alphaEq;
+        document.getElementById('beta-equation').innerHTML  = currentGate.betaEq;
+        document.getElementById('alpha-calc-term1-label').innerHTML = currentGate.alphaTerm1;
+        document.getElementById('alpha-calc-term2-label').innerHTML = currentGate.alphaTerm2;
+        document.getElementById('beta-calc-term1-label').innerHTML  = currentGate.betaTerm1;
+        document.getElementById('beta-calc-term2-label').innerHTML  = currentGate.betaTerm2;
+      }
+
+      document.getElementById('main-title').innerHTML     = `Interactive \\(${gateName}\\) Gate Visualization`;
+      document.getElementById('main-subtitle').innerHTML  = `Visualize how the \\(${gateName}\\) gate transforms a qubit's state vector.`;
+      document.getElementById('final-state-title').innerHTML = `Final State: \\(${gateName}|\\psi\\rangle\\)`;
+      document.getElementById('gate-matrix-display').innerHTML = matrixHtml;
+
+      paramsContainer.innerHTML = '';
+      const params = {'U': ['theta', 'phi', 'lambda'], 'P':['theta'], 'R': ['theta', 'phi'], 'Rx': ['theta'], 'Ry': ['theta'], 'Rz': ['theta'], 'RV': ['vx', 'vy', 'vz']}[gateType] || [];
+      if (params.length > 0) {
+        paramsContainer.innerHTML = `<label class="block text-base font-medium mb-2 text-slate-300 text-center">Gate Parameters</label>`;
+        const hasAngleParams = params.some(p => ['theta', 'phi', 'lambda'].includes(p));
+        if (hasAngleParams) {
+          paramsContainer.innerHTML += `
+            <div class="text-center mb-4">
+              <button id="unit-rad-btn" type="button" class="btn text-xs px-2 py-1 ${state.angleUnit === 'rad' ? 'active' : ''}">Radians</button>
+              <button id="unit-deg-btn" type="button" class="btn text-xs px-2 py-1 ${state.angleUnit === 'deg' ? 'active' : ''}">Degrees</button>
+            </div>
+          `;
+        }
+      }
+
+      params.forEach(p => {
+        const is_rv_param = (p === 'vx' || p === 'vy' || p === 'vz');
+        const p_label = is_rv_param ? `v_${p.slice(-1)}` : `\\${p}`;
+        const min_val = is_rv_param ? -4 : 0;
+        const max_val = is_rv_param ? 4 : 6.283;
+        let valueText;
+        if (is_rv_param) { valueText = state[p].toFixed(2); }
+        else {
+          if (state.angleUnit === 'deg') { const degValue = state[p] * (180 / PI); valueText = `${degValue.toFixed(1)}°`; }
+          else { valueText = `${state[p].toFixed(2)} rad`; }
+        }
+        paramsContainer.innerHTML += `
+          <div class="flex items-center justify-center mb-2">
+            <label class="block text-sm font-medium text-slate-300 w-20 text-center">\\(${p_label}\\)</label>
+            <input id="${p}-slider" type="range" min="${min_val}" max="${max_val}" step="0.01" value="${state[p]}" class="mx-4" />
+            <span id="${p}-value" class="font-mono text-sm text-indigo-300 w-24 text-right">${valueText}</span>
+          </div>`;
+      });
+
+      if (window.MathJax) { MathJax.typesetPromise(); }
+      document.querySelectorAll('#gate-select-buttons .btn').forEach(b => { b.classList.toggle('active', b.dataset.gate === gateType); });
+      updateVisualization();
+    }
+
+    // --- Helpers ---
+    function setStatus(msg) { const s = document.getElementById('status-line'); s.textContent = msg; }
+
+    function randomize() {
+      // initial state
+      state.magnitudeAngle = Math.random() * (PI/2);
+      state.alphaPhase = Math.random() * 2*PI;
+      state.betaPhase  = Math.random() * 2*PI;
+      // gate params
+      if (['U','R'].includes(state.gateType)) {
+        state.theta = Math.random() * 2*PI;
+        state.phi   = Math.random() * 2*PI;
+        state.lambda= state.gateType==='U' ? Math.random() * 2*PI : 0;
+      } else if (['Rx','Ry','Rz','P'].includes(state.gateType)) {
+        state.theta = Math.random() * 2*PI;
+        state.phi = 0; state.lambda=0;
+      } else if (state.gateType === 'RV') {
+        state.vx = (Math.random()*2-1) * PI; state.vy = (Math.random()*2-1) * PI; state.vz = (Math.random()*2-1) * PI;
+      }
+      updateSlidersFromState(); updateUIForGate(); setStatus('Randomized parameters.');
+    }
+
+    function resetAll() {
+      // Reset to a friendly default matching the original demo
+      document.querySelector('#gate-select-buttons .btn[data-gate="Rz"]').click();
+      document.querySelector('#initial-state-buttons .btn[data-state="+"]').click();
+      setStatus('Reset to Rz and |+⟩.');
+    }
+
+    // --- Event Listeners ---
+    function clearActivePreset() { document.querySelectorAll('#initial-state-buttons .btn').forEach(b => b.classList.remove('active')); }
+
+    document.getElementById('magnitude-slider').addEventListener('input', e => { state.magnitudeAngle = parseFloat(e.target.value); clearActivePreset(); updateInitialState(); });
+    document.getElementById('alpha-phase-slider').addEventListener('input', e => { state.alphaPhase = parseFloat(e.target.value); clearActivePreset(); updateInitialState(); });
+    document.getElementById('beta-phase-slider').addEventListener('input', e => { state.betaPhase = parseFloat(e.target.value); clearActivePreset(); updateInitialState(); });
+
+    document.getElementById('initial-state-buttons').addEventListener('click', e => {
+      if (e.target.closest('button')) {
+        const btn = e.target.closest('button'); const key = btn.dataset.state;
+        if (presetStates[key]) { Object.assign(state, presetStates[key]); document.querySelectorAll('#initial-state-buttons .btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); updateSlidersFromState(); setStatus(`Preset ${key} selected.`); }
+      }
+    });
+
+    document.getElementById('gate-params-container').addEventListener('input', e => {
+      if (e.target.matches('input[type="range"]')) {
+        const param = e.target.id.replace('-slider', ''); let value = parseFloat(e.target.value);
+        const gatesWithSnapping = ['Rx', 'Ry', 'Rz', 'P', 'R']; const paramsWithSnapping = ['theta', 'phi'];
+        if (gatesWithSnapping.includes(state.gateType) && paramsWithSnapping.includes(param)) {
+          const snapPoints = [0, PI / 2, PI, 3 * PI / 2, 2 * PI]; const snapThreshold = 0.22;
+          for (const point of snapPoints) { if (Math.abs(value - point) < snapThreshold) { value = point; e.target.value = value; break; } }
+        }
+        state[param] = value;
+        const is_rv_param = (param === 'vx' || param === 'vy' || param === 'vz');
+        let valueText;
+        if (is_rv_param) { valueText = state[param].toFixed(2); }
+        else { if (state.angleUnit === 'deg') { const degValue = state[param] * (180 / PI); valueText = `${degValue.toFixed(1)}°`; } else { valueText = `${state[param].toFixed(2)} rad`; } }
+        document.getElementById(`${param}-value`).textContent = valueText;
+        updateVisualization();
+      }
+    });
+
+    document.getElementById('gate-params-container').addEventListener('click', e => {
+      if (e.target.id === 'unit-rad-btn' || e.target.id === 'unit-deg-btn') {
+        const newUnit = e.target.id === 'unit-rad-btn' ? 'rad' : 'deg';
+        if (state.angleUnit !== newUnit) { state.angleUnit = newUnit; updateUIForGate(); setStatus(`Angle unit set to ${newUnit}.`); }
+      }
+    });
+
+    document.getElementById('gate-select-buttons').addEventListener('click', e => {
+      if (e.target.closest('button')) {
+        const btn = e.target.closest('button'); state.gateType = btn.dataset.gate;
+        if(['Rx','Ry','Rz','P'].includes(state.gateType)) { state.phi = 0; state.lambda = 0; }
+        else if (state.gateType === 'R') { state.lambda = 0; }
+        else if (state.gateType === 'RV') { state.theta = 0; state.phi = 0; state.lambda = 0; }
+        updateUIForGate(); setStatus(`Gate ${state.gateType} selected.`);
+      }
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', resetAll);
+    document.getElementById('randomize-btn').addEventListener('click', randomize);
+
+    window.addEventListener('resize', resizeBlochSpheres);
+
+    window.onload = () => {
+      blochSpheres.initial = createBlochSphereInstance('bloch-sphere-initial', 0xfbbf24);
+      blochSpheres.final   = createBlochSphereInstance('bloch-sphere-final',   0x4ade80);
+      animateBlochSpheres();
+      document.querySelector('#gate-select-buttons .btn[data-gate="Rz"]').click();
+      document.querySelector('#initial-state-buttons .btn[data-state="+"]').click();
+    };
+  </script>
+</body>
+</html>
