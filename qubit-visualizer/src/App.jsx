@@ -120,10 +120,10 @@ export default function App() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-                <MathJax>{`Interactive $${currentGateInfo?.nameLatex ?? gate.type}$ Gate Visualization`}</MathJax>
+                <MathJax>{`Interactive Gate Visualization`}</MathJax>
               </h1>
               <p className="text-base md:text-lg text-slate-400 mt-2">
-                <MathJax>{`Visualize how the $${currentGateInfo?.nameLatex ?? gate.type}$ gate transforms a qubit's state vector.`}</MathJax>
+                <MathJax>{`Visualize how a qubit's state vector is transformed.`}</MathJax>
               </p>
             </div>
             <div className="flex items-center gap-2">
