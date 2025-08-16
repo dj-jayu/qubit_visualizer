@@ -36,6 +36,7 @@ export default function App() {
 
   const math = useMemo(() => computeGate(alpha, beta, gate), [alpha, beta, gate]);
   const currentGateInfo = GATE_INFO[gate.type];
+  console.log("Debugging nameLatex:", currentGateInfo?.nameLatex);
 
   const onPreset = (key) => {
     const p = presets[key];
