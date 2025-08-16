@@ -167,9 +167,7 @@ export default function App() {
               <section className="panel flex flex-col gap-3 items-center">
                 <div className="panel-header justify-between w-full">
                   <h3 className="text-xl text-white">
-                    <MathJax dynamic>
-                      {String.raw`Final State: $${(currentGateInfo?.nameLatex ?? gate.type)}|\psi\rangle$`}
-                    </MathJax>
+                      <MathJax>{`Final State: $${currentGateInfo?.nameLatex ?? gate.type} |\\psi\\rangle$`}</MathJax>
                   </h3>
                   <div className="text-xs text-slate-400">
                     |α'|², |β'|²:
