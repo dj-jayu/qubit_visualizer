@@ -2,7 +2,48 @@
   "hash": "b0208c75",
   "configHash": "f2261647",
   "lockfileHash": "13500360",
-  "browserHash": "1e24da17",
-  "optimized": {},
-  "chunks": {}
+  "browserHash": "f5860f96",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "84b4ead2",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "e7491117",
+      "needsInterop": true
+    },
+    "better-react-mathjax": {
+      "src": "../../node_modules/better-react-mathjax/esm/index.js",
+      "file": "better-react-mathjax.js",
+      "fileHash": "14e1afa8",
+      "needsInterop": false
+    },
+    "three": {
+      "src": "../../node_modules/three/build/three.module.js",
+      "file": "three.js",
+      "fileHash": "8332b490",
+      "needsInterop": false
+    },
+    "three/examples/jsm/controls/OrbitControls.js": {
+      "src": "../../node_modules/three/examples/jsm/controls/OrbitControls.js",
+      "file": "three_examples_jsm_controls_OrbitControls__js.js",
+      "fileHash": "b4e9aca2",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-3VDXVL42": {
+      "file": "chunk-3VDXVL42.js"
+    },
+    "chunk-DSDUBZJN": {
+      "file": "chunk-DSDUBZJN.js"
+    },
+    "chunk-5WRI5ZAA": {
+      "file": "chunk-5WRI5ZAA.js"
+    }
+  }
 }
