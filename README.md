@@ -9,7 +9,9 @@
 This project provides an interactive way to visualize a qubit’s state and how quantum gates transform it.
 While the **Bloch sphere** is a common and powerful representation, it hides certain details like **phase information**.
 
-I personally find it more intuitive to imagine a qubit as **two stacked complex planes**:
+I personally find it more intuitive to imagine a qubit as **two stacked complex planes**.
+
+This is similar to the [circle (dial) notation](https://thequantumturtle.github.io/Circle-Notation/):
 
 * **Upper plane:** amplitude of $|0\rangle$
 * **Lower plane:** amplitude of $|1\rangle$
@@ -18,14 +20,12 @@ This tool combines both perspectives:
 
 * **Bloch sphere view** – for geometric intuition.
 * **Two complex planes view** – for phase clarity.
-
 ---
 
 ## Features
 
 * Visualize the initial state of a qubit.
 * See how various gates transform the state in **both representations**.
-* Built using **Gemini Pro** and **ChatGPT** for idea development and prototyping.
 * Gate definitions sourced from [IBM Qiskit Documentation](https://quantum.cloud.ibm.com/docs/en/api/qiskit/qiskit.circuit.library.TGate) (e.g., for the T gate).
 
 ---
@@ -38,9 +38,10 @@ This visualization aims to make those transformations clearer.
 ---
 
 ## Implementation Notes
-
-* The code is currently a single-page web app.
-* Future improvements could include refactoring into smaller, reusable components (e.g., with **React** or another framework).
+* Built using AI models for idea development and prototyping.
+* The first builds were pure html / css / js.
+* Most recent build uses React and Vite as a package manager.
+* My plan is to learn more React and Three.js in order to improve the app.
 * The math and visuals should be correct, but there may be undetected errors.
 
 ---
