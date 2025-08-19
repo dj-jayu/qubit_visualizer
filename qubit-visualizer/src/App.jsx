@@ -9,6 +9,15 @@ import ComplexPlaneCanvas from "./components/ComplexPlaneCanvas";
 import StateControlPanel from "./components/StateControlPanel";
 import GateControlPanel from "./components/GateControlPanel";
 
+// Define the config object outside the component so it's not recreated on every render.
+const mathJaxConfig = {
+  tex: {
+    inlineMath: [["$", "$"], ["\\(", "\\)"]],
+    displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+  },
+  loader: { load: ["input/tex", "output/chtml"] },
+};
+
 export default function App() {
   const [angleUnit, setAngleUnit] = useState("rad");
   const [gate, setGate] = useState({ type: "Rz", theta: PI, phi: 0, lambda: 0, vx: 1, vy: 0, vz: 0 });
@@ -78,16 +87,7 @@ export default function App() {
   };
 
   return (
-    <MathJaxContext
-      version={3}
-      config={{
-        tex: {
-          inlineMath: [["$", "$"], ["\\(", "\\)"]],
-          displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        },
-        loader: { load: ["input/tex", "output/chtml"] },
-      }}
-    >
+    <MathJaxContext version={3} config={mathJaxConfig}>
       <div
         className="p-4 md:p-8 min-h-screen"
         style={{
