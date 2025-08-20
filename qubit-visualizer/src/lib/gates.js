@@ -4,7 +4,7 @@ import { PI, TAU, complex, cMul, cAdd, cScale } from "./utils";
 export const GATE_INFO = {
   RV: {
     nameLatex: "R(\\vec{v})",
-    matrix: String.raw`$$R(\vec{v}) = \begin{pmatrix} c - i n_z s & -n_y s - i n_x s \\ n_y s - i n_x s & c + i n_z s \end{pmatrix}$$ <div class="text-xs mt-2">\(c=\cos(\tfrac{\|\vec{v}\|}{2}), s=\sin(\tfrac{\|\vec{v}\|}{2}), n_k = v_k/\|\vec{v}\|\)</div>`,
+    matrix: String.raw`$$R(\vec{v}) = \begin{pmatrix} c - i n_z s & -n_y s - i n_x s \\ n_y s - i n_x s & c + i n_z s \end{pmatrix}$$ \(c=\cos(\tfrac{\|\vec{v}\|}{2}), s=\sin(\tfrac{\|\vec{v}\|}{2}), n_k = v_k/\|\vec{v}\|\)</div>`,
     alphaEq: String.raw`\(\alpha' = (c - i n_z s)\alpha + (-n_y s - i n_x s)\beta\)`,
     betaEq: String.raw`\(\beta' = (n_y s - i n_x s)\alpha + (c + i n_z s)\beta\)`,
     alphaTerm1: String.raw`\((c - i n_z s)\alpha\)`,
