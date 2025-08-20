@@ -157,6 +157,17 @@ export const GATE_INFO = {
     betaTerm2:  String.raw`\(-\frac{1}{\sqrt{2}}\beta\)`,
     params: [],
   },
+  H_theta: {
+    nameLatex: "H(\\theta)",
+    matrix: String.raw`$$H(\theta) = \begin{pmatrix} \cos(\frac{\theta}{2}) - \frac{i}{\sqrt{2}}\sin(\frac{\theta}{2}) & -\frac{i}{\sqrt{2}}\sin(\frac{\theta}{2}) \\ -\frac{i}{\sqrt{2}}\sin(\frac{\theta}{2}) & \cos(\frac{\theta}{2}) + \frac{i}{\sqrt{2}}\sin(\frac{\theta}{2}) \end{pmatrix}$$`,
+    alphaEq: String.raw`\(\alpha' = (\cos\frac{\theta}{2} - \frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\alpha - (\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
+    betaEq: String.raw`\(\beta' = -(\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\alpha + (\cos\frac{\theta}{2} + \frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
+    alphaTerm1: String.raw`\((\cos\frac{\theta}{2} - \frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\alpha\)`,
+    alphaTerm2: String.raw`\((-\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
+    betaTerm1: String.raw`\((-\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\alpha\)`,
+    betaTerm2: String.raw`\((\cos\frac{\theta}{2} + \frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
+    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+  },
 };
 
 export function computeGate(alpha, beta, gate) {
@@ -282,6 +293,22 @@ export function computeGate(alpha, beta, gate) {
       b1 = cScale(alpha, inv_sqrt2);
       b2 = cScale(beta, -inv_sqrt2);
      }
+     else if (type === "H_theta") {
+      const cos_t2 = Math.cos((theta ?? 0) / 2);
+      const sin_t2 = Math.sin((theta ?? 0) / 2);
+      const i_inv_sqrt2 = 1 / Math.sqrt(2);
+
+      // Define the 4 matrix elements from the image
+      const m00 = complex(cos_t2, -i_inv_sqrt2 * sin_t2);
+      const m01 = complex(0, -i_inv_sqrt2 * sin_t2);
+      const m10 = complex(0, -i_inv_sqrt2 * sin_t2);
+      const m11 = complex(cos_t2, i_inv_sqrt2 * sin_t2);
+      
+      a1 = cMul(m00, alpha);
+      a2 = cMul(m01, beta);
+      b1 = cMul(m10, alpha);
+      b2 = cMul(m11, beta);
+    }
   }
 
   const finalAlpha = cAdd(a1, a2);
