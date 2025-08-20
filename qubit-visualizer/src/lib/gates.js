@@ -146,6 +146,17 @@ export const GATE_INFO = {
     betaTerm2:  String.raw`\((e^{i\pi/4})\beta\)`,
     params: [],
   },
+  H: {
+    nameLatex: "H",
+    matrix: String.raw`$$H = \frac{1}{\sqrt{2}}\begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}$$`,
+    alphaEq:    String.raw`\(\alpha' = \frac{1}{\sqrt{2}}\alpha + \frac{1}{\sqrt{2}}\beta\)`,
+    betaEq:     String.raw`\(\beta'  = \frac{1}{\sqrt{2}}\alpha - \frac{1}{\sqrt{2}}\beta\)`,
+    alphaTerm1: String.raw`\(\frac{1}{\sqrt{2}}\alpha\)`,
+    alphaTerm2: String.raw`\(\frac{1}{\sqrt{2}}\beta\)`,
+    betaTerm1:  String.raw`\(\frac{1}{\sqrt{2}}\alpha\)`,
+    betaTerm2:  String.raw`\(-\frac{1}{\sqrt{2}}\beta\)`,
+    params: [],
+  },
 };
 
 export function computeGate(alpha, beta, gate) {
@@ -264,6 +275,13 @@ export function computeGate(alpha, beta, gate) {
       b1 = complex(0, 0);
       b2 = complex((beta.re - beta.im) * inv_sqrt2, (beta.re + beta.im) * inv_sqrt2); // e^{iπ/4}
     }
+     else if (type === "H") {
+      const inv_sqrt2 = 1 / Math.sqrt(2);
+      a1 = cScale(alpha, inv_sqrt2);
+      a2 = cScale(beta, inv_sqrt2);
+      b1 = cScale(alpha, inv_sqrt2);
+      b2 = cScale(beta, -inv_sqrt2);
+     }
   }
 
   const finalAlpha = cAdd(a1, a2);
