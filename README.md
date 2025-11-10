@@ -1,4 +1,4 @@
-# [Qubit Visualizer - (clickable link)](https://dj-jayu.github.io/qubit_visualizer/)
+# [Qubit Visualizer (clickable link)](https://dj-jayu.github.io/qubit_visualizer/)
 
 **Visualizing qubits using both the Bloch sphere and two complex planes.**
 
