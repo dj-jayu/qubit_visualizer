@@ -22,15 +22,38 @@ export function cScale(a, s) { return { re: a.re * s, im: a.im * s }; }
 export function polar(mag, phase) { return { re: mag * Math.cos(phase), im: mag * Math.sin(phase) }; }
 
 // --- Coordinate Conversion ---
-export function amplitudesToBloch(alpha, beta) {
+// Bloch-sphere coordinates (x, y, z) for |ψ⟩ = α|0⟩ + β|1⟩, in the usual
+// convention where |0⟩ is +z and |1⟩ is -z.
+export function blochVector(alpha, beta) {
+  const x = 2 * (alpha.re * beta.re + alpha.im * beta.im); // 2·Re(α*β)
+  const y = 2 * (alpha.re * beta.im - alpha.im * beta.re); // 2·Im(α*β)
   const z = alpha.re * alpha.re + alpha.im * alpha.im - (beta.re * beta.re + beta.im * beta.im);
-  const x = 2 * (alpha.re * beta.re + alpha.im * beta.im);
-  const y = 2 * (alpha.im * beta.re - alpha.re * beta.im);
+  return { x, y, z };
+}
+
+// Polar/azimuthal angles of the Bloch vector: theta from +z, phi in the x-y plane.
+export function blochAngles(alpha, beta) {
+  const { x, y, z } = blochVector(alpha, beta);
+  const r = Math.hypot(x, y, z);
+  const theta = r < 1e-9 ? 0 : Math.acos(Math.min(1, Math.max(-1, z / r)));
+  let phi = Math.atan2(y, x);
+  if (phi < 0) phi += TAU;
+  return { theta, phi };
+}
+
+// Three.js scene vector for the state arrow. The scene uses Y-up, so the Bloch
+// z-axis maps to the scene's +Y (|0⟩ at the top).
+export function amplitudesToBloch(alpha, beta) {
+  const { x, y, z } = blochVector(alpha, beta);
   return new THREE.Vector3(x, z, -y).normalize();
 }
 
 // --- UI Helpers ---
-export function snapAngle(value, points = [0, PI / 2, PI, (3 * PI) / 2, TAU], threshold = 0.22) {
+export function snapAngle(
+  value,
+  points = [0, PI / 2, PI, (3 * PI) / 2, TAU, (5 * PI) / 2, 3 * PI, (7 * PI) / 2, 2 * TAU],
+  threshold = 0.22
+) {
   for (const p of points) {
     if (Math.abs(value - p) < threshold) return p;
   }

@@ -57,7 +57,7 @@ export const GATE_INFO = {
     betaTerm1: String.raw`\(\alpha e^{i\phi}\sin(\theta/2)\)`,
     betaTerm2: String.raw`\(\beta e^{i(\phi+\lambda)}\cos(\theta/2)\)`,
     params: [
-      { id: "theta", label: "\\theta", min: 0, max: TAU },
+      { id: "theta", label: "\\theta", min: 0, max: 2 * TAU },
       { id: "phi", label: "\\phi", min: 0, max: TAU },
       { id: "lambda", label: "\\lambda", min: 0, max: TAU },
     ],
@@ -78,7 +78,7 @@ export const GATE_INFO = {
     alphaTerm2: String.raw`\((0)\beta\)`,
     betaTerm1: String.raw`\((0)\alpha\)`,
     betaTerm2: String.raw`\((e^{i\theta})\beta\)`,
-    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+    params: [{ id: "theta", label: "\\theta", min: 0, max: 2 * TAU }],
   },
   R: {
     nameLatex: "R(\\theta,\\phi)",
@@ -98,7 +98,7 @@ export const GATE_INFO = {
     betaTerm1: String.raw`\(-i\alpha e^{i\phi}\sin(\theta/2)\)`,
     betaTerm2: String.raw`\(\beta\cos(\theta/2)\)`,
     params: [
-      { id: "theta", label: "\\theta", min: 0, max: TAU },
+      { id: "theta", label: "\\theta", min: 0, max: 2 * TAU },
       { id: "phi", label: "\\phi", min: 0, max: TAU },
     ],
   },
@@ -118,7 +118,7 @@ export const GATE_INFO = {
     alphaTerm2: String.raw`\(-i\beta \sin(\theta/2)\)`,
     betaTerm1: String.raw`\(-i\alpha \sin(\theta/2)\)`,
     betaTerm2: String.raw`\(\beta \cos(\theta/2)\)`,
-    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+    params: [{ id: "theta", label: "\\theta", min: 0, max: 2 * TAU }],
   },
   Ry: {
     nameLatex: "R_y(\\theta)",
@@ -136,7 +136,7 @@ export const GATE_INFO = {
     alphaTerm2: String.raw`\(-\beta \sin(\theta/2)\)`,
     betaTerm1: String.raw`\(\alpha \sin(\theta/2)\)`,
     betaTerm2: String.raw`\(\beta \cos(\theta/2)\)`,
-    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+    params: [{ id: "theta", label: "\\theta", min: 0, max: 2 * TAU }],
   },
   Rz: {
     nameLatex: "R_z(\\theta)",
@@ -154,7 +154,7 @@ export const GATE_INFO = {
     alphaTerm2: String.raw`\((0)\beta\)`,
     betaTerm1: String.raw`\((0)\alpha\)`,
     betaTerm2: String.raw`\(e^{i\theta/2} \beta\)`,
-    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+    params: [{ id: "theta", label: "\\theta", min: 0, max: 2 * TAU }],
   },
   X: {
     nameLatex: "X",
@@ -262,7 +262,7 @@ export const GATE_INFO = {
     alphaTerm2: String.raw`\((-\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
     betaTerm1: String.raw`\((-\frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\alpha\)`,
     betaTerm2: String.raw`\((\cos\frac{\theta}{2} + \frac{i}{\sqrt{2}}\sin\frac{\theta}{2})\beta\)`,
-    params: [{ id: "theta", label: "\\theta", min: 0, max: TAU }],
+    params: [{ id: "theta", label: "\\theta", min: 0, max: 2 * TAU }],
   },
 };
 
@@ -279,4 +279,37 @@ export function computeGate(alpha, beta, gate) {
   const b2 = cMul(m11, beta);
 
   return { a1, a2, b1, b2, finalAlpha: cAdd(a1, a2), finalBeta: cAdd(b1, b2) };
+}
+
+// The Bloch-sphere axis a gate rotates the state around, as a unit vector
+// {x, y, z}, or null for gates without a single well-defined axis (U) or no
+// rotation (RV with a zero vector). Used to draw the rotation axis on the sphere.
+export function getRotationAxis(gate) {
+  const norm = (x, y, z) => {
+    const r = Math.hypot(x, y, z);
+    return r < 1e-9 ? null : { x: x / r, y: y / r, z: z / r };
+  };
+  switch (gate.type) {
+    case "Rx":
+    case "X":
+      return { x: 1, y: 0, z: 0 };
+    case "Ry":
+    case "Y":
+      return { x: 0, y: 1, z: 0 };
+    case "Rz":
+    case "Z":
+    case "S":
+    case "T":
+    case "P":
+      return { x: 0, y: 0, z: 1 };
+    case "R":
+      return norm(Math.cos(gate.phi ?? 0), Math.sin(gate.phi ?? 0), 0);
+    case "H":
+    case "H_theta":
+      return norm(1, 0, 1);
+    case "RV":
+      return norm(gate.vx ?? 0, gate.vy ?? 0, gate.vz ?? 0);
+    default:
+      return null; // U and anything else: no single axis drawn
+  }
 }
