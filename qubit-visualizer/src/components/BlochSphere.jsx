@@ -5,44 +5,71 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { amplitudesToBloch } from '../lib/utils';
 
-// This helper is only used by BlochSphere, so it can stay here.
-function makeLabelSprite(text, color = "#e5e7eb") {
-  const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d");
-    ctx.font = "bold 180px Inter, Arial, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = "rgba(0,0,0,0.6)";
-    ctx.fillStyle = color;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2 + 12;
-    ctx.strokeText(text, cx, cy);
-    ctx.fillText(text, cx, cy);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.minFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: tex, transparent: true })
-    );
-    sprite.scale.set(0.3, 0.3, 1);
-    return sprite;
+const UP = new THREE.Vector3(0, 1, 0);
+
+// Convert a Bloch-space vector {x, y, z} to the scene's coordinate system
+// (Y-up, with the Bloch z-axis pointing up). Matches amplitudesToBloch.
+function blochToScene({ x, y, z }) {
+  return new THREE.Vector3(x, z, -y);
 }
 
-export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
-    const mountRef = useRef(null);
-    const vectorRef = useRef(null);
-    const sceneRef = useRef(null);
-    const rendererRef = useRef(null);
-    const cameraRef = useRef(null);
-    const controlsRef = useRef(null);
+function makeLabelSprite(text, color = "#e5e7eb", fontSize = 180, scaleXY = 0.3) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  ctx.font = `bold ${fontSize}px Inter, Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = "rgba(0,0,0,0.6)";
+  ctx.fillStyle = color;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2 + 12;
+  ctx.strokeText(text, cx, cy);
+  ctx.fillText(text, cx, cy);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true })
+  );
+  sprite.scale.set(scaleXY, scaleXY, 1);
+  return sprite;
+}
+
+// A unit circle (radius 1) lying in one of the scene's principal planes.
+function makeCircle(plane, color, opacity, segments = 96) {
+  const pts = [];
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const c = Math.cos(a), s = Math.sin(a);
+    if (plane === "xz") pts.push(new THREE.Vector3(c, 0, s));      // equator
+    else if (plane === "xy") pts.push(new THREE.Vector3(c, s, 0)); // meridian
+    else pts.push(new THREE.Vector3(0, c, s));                     // meridian
+  }
+  const geom = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+  return new THREE.LineLoop(geom, mat);
+}
+
+export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotationAxis = null }) {
+  const mountRef = useRef(null);
+  const vectorRef = useRef(null);
+  const sceneRef = useRef(null);
+  const rendererRef = useRef(null);
+  const cameraRef = useRef(null);
+  const controlsRef = useRef(null);
+  const targetQuatRef = useRef(new THREE.Quaternion());
+  const initializedRef = useRef(false);
+  const axisRef = useRef(null);
 
   // setup scene once
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
+
+    initializedRef.current = false;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -51,7 +78,8 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
       0.1,
       1000
     );
-    camera.position.set(2.5, 1.5, 3.5);
+    // classic textbook view: z up, x toward the viewer-left, y to the right
+    camera.position.set(2.8, 1.9, -2.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -70,6 +98,11 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
     );
     scene.add(sph);
 
+    // equator + two meridian great circles
+    scene.add(makeCircle("xz", 0x6366f1, 0.4)); // equator
+    scene.add(makeCircle("xy", 0x4f46e5, 0.15));
+    scene.add(makeCircle("yz", 0x4f46e5, 0.15));
+
     // axes lines (±X, ±Y, ±Z)
     const positions = [
       -1.3, 0, 0, 1.3, 0, 0, // X
@@ -86,15 +119,20 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
     axesGeom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     scene.add(new THREE.LineSegments(axesGeom, new THREE.LineBasicMaterial({ vertexColors: true })));
 
-    // axis labels: x,y,z
+    // eigenstate labels at the six axis tips, colored to match their axes.
+    // (z = |0⟩/|1⟩, x = |+⟩/|−⟩ red, y = |i⟩/|−i⟩ blue)
     const labels = new THREE.Group();
-    const labelX = makeLabelSprite("x", "#f87171");
-    const labelY = makeLabelSprite("y", "#34d399");
-    const labelZ = makeLabelSprite("z", "#60a5fa");
-    labelX.position.set(1.45, 0, 0);
-    labelZ.position.set(0, 1.45, 0);
-    labelY.position.set(0, 0, 1.45);
-    labels.add(labelX, labelY, labelZ);
+    const addKet = (text, color, x, y, z) => {
+      const sprite = makeLabelSprite(text, color, 96, 0.5);
+      sprite.position.set(x, y, z);
+      labels.add(sprite);
+    };
+    addKet("|0⟩", "#e2e8f0", 0, 1.5, 0);
+    addKet("|1⟩", "#e2e8f0", 0, -1.5, 0);
+    addKet("|+⟩", "#f87171", 1.5, 0, 0);
+    addKet("|-⟩", "#f87171", -1.5, 0, 0);
+    addKet("|i⟩", "#60a5fa", 0, 0, -1.5);
+    addKet("|-i⟩", "#60a5fa", 0, 0, 1.5);
     scene.add(labels);
 
     // state vector (cylinder + cone)
@@ -118,10 +156,18 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
     cameraRef.current = camera;
     vectorRef.current = stateVector;
 
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     let rafId = 0;
     const animate = () => {
       rafId = requestAnimationFrame(animate);
       controls.update();
+      const vec = vectorRef.current;
+      if (vec) {
+        // Smoothly rotate the state vector toward its target orientation.
+        if (reduceMotion) vec.quaternion.copy(targetQuatRef.current);
+        else vec.quaternion.slerp(targetQuatRef.current, 0.25);
+      }
       renderer.render(scene, camera);
     };
     animate();
@@ -156,14 +202,45 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
     };
   }, [vectorColor]);
 
-    // update vector on amplitude change
-    useEffect(() => {
-      if (!vectorRef.current) return;
-      const target = amplitudesToBloch(alpha, beta);
-      // orient +Y to target
-      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), target);
-      vectorRef.current.quaternion.copy(q);
-    }, [alpha, beta]);
+  // update target orientation on amplitude change (animated in the render loop)
+  useEffect(() => {
+    if (!vectorRef.current) return;
+    const target = new THREE.Quaternion().setFromUnitVectors(UP, amplitudesToBloch(alpha, beta));
+    targetQuatRef.current = target;
+    // Snap (no animation) the first time, so we don't sweep in from |0⟩ on mount.
+    if (!initializedRef.current) {
+      vectorRef.current.quaternion.copy(target);
+      initializedRef.current = true;
+    }
+  }, [alpha, beta]);
+
+  // draw / update the rotation axis the current gate rotates around
+  const axisX = rotationAxis?.x;
+  const axisY = rotationAxis?.y;
+  const axisZ = rotationAxis?.z;
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    if (axisRef.current) {
+      scene.remove(axisRef.current);
+      axisRef.current.geometry.dispose();
+      axisRef.current.material.dispose();
+      axisRef.current = null;
+    }
+
+    if (axisX == null || axisY == null || axisZ == null) return;
+
+    const dir = blochToScene({ x: axisX, y: axisY, z: axisZ }).normalize().multiplyScalar(1.25);
+    const geom = new THREE.BufferGeometry().setFromPoints([
+      dir.clone().multiplyScalar(-1),
+      dir.clone(),
+    ]);
+    const mat = new THREE.LineBasicMaterial({ color: 0xfafafa, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geom, mat);
+    scene.add(line);
+    axisRef.current = line;
+  }, [axisX, axisY, axisZ]);
 
   return <div ref={mountRef} className="bloch-sphere-container w-full min-h-[380px] h-[45vh]" />;
 }

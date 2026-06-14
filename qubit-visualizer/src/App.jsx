@@ -1,8 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { MathJax } from "better-react-mathjax";
+import MathText from "./components/MathText";
 
-import { PI, TAU, polar, probText } from "./lib/utils";
-import { GATE_INFO, computeGate } from "./lib/gates";
+import { PI, TAU, polar, probText, blochVector, fmt } from "./lib/utils";
+import { GATE_INFO, computeGate, getRotationAxis } from "./lib/gates";
+
+// Compact "x, y, z" readout of a state's Bloch-sphere coordinates.
+const blochText = (a, b) => {
+  const { x, y, z } = blochVector(a, b);
+  return `(${fmt(x, 2)}, ${fmt(y, 2)}, ${fmt(z, 2)})`;
+};
 
 import BlochSphere from "./components/BlochSphere";
 import ComplexPlaneCanvas from "./components/ComplexPlaneCanvas";
@@ -35,6 +41,7 @@ export default function App() {
   }, [init]);
 
   const math = useMemo(() => computeGate(alpha, beta, gate), [alpha, beta, gate]);
+  const rotationAxis = useMemo(() => getRotationAxis(gate), [gate]);
   const currentGateInfo = GATE_INFO[gate.type];
 
   const onPreset = (key) => {
@@ -110,10 +117,10 @@ export default function App() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-                <MathJax>{`Interactive Gate Visualization`}</MathJax>
+                <MathText>{`Interactive Gate Visualization`}</MathText>
               </h1>
               <p className="text-base md:text-lg text-slate-400 mt-2">
-                <MathJax>{`Visualize how a qubit's state vector is transformed.`}</MathJax>
+                <MathText>{`Visualize how a qubit's state vector is transformed.`}</MathText>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -144,7 +151,7 @@ export default function App() {
               <section className="panel flex flex-col gap-3 items-center">
                 <div className="panel-header justify-between w-full">
                   <h3 className="text-xl text-white">
-                    <MathJax>{String.raw`Initial State: $(|\psi\rangle)$`}</MathJax>
+                    <MathText>{String.raw`Initial State: $(|\psi\rangle)$`}</MathText>
                   </h3>
                   <div className="text-xs text-slate-400">
                     |α|², |β|²:
@@ -152,21 +159,30 @@ export default function App() {
                   </div>
                 </div>
                 <BlochSphere alpha={alpha} beta={beta} vectorColor={0xfbbf24} />
+                <div className="text-xs text-slate-400 self-start">
+                  Bloch <span className="font-mono text-slate-300">x, y, z = {blochText(alpha, beta)}</span>
+                </div>
               </section>
 
               <section className="panel flex flex-col gap-3 items-center">
                 <div className="panel-header justify-between w-full">
                   <h3 className="text-xl text-white">
-                    <MathJax dynamic>
+                    <MathText dynamic>
                       {`Final State: $${currentGateInfo?.nameLatex ?? gate.type} |\\psi\\rangle$`}
-                    </MathJax>
+                    </MathText>
                   </h3>
                   <div className="text-xs text-slate-400">
                     |α'|², |β'|²:
                     <span className="font-mono text-slate-300 ml-1">{probText(math.finalAlpha, math.finalBeta)}</span>
                   </div>
                 </div>
-                <BlochSphere alpha={math.finalAlpha} beta={math.finalBeta} vectorColor={0x4ade80} />
+                <BlochSphere alpha={math.finalAlpha} beta={math.finalBeta} vectorColor={0x4ade80} rotationAxis={rotationAxis} />
+                <div className="text-xs text-slate-400 self-start flex items-center gap-3 flex-wrap">
+                  <span>Bloch <span className="font-mono text-slate-300">x, y, z = {blochText(math.finalAlpha, math.finalBeta)}</span></span>
+                  {rotationAxis && (
+                    <span className="text-slate-500">— white line: rotation axis</span>
+                  )}
+                </div>
               </section>
             </div>
 
@@ -181,11 +197,11 @@ export default function App() {
                 <div className="mt-4 flex flex-col items-center gap-4">
                   <div className="w-full">
                     <p className="text-center font-mono text-lg mb-2 text-indigo-400 min-h-8">
-                      <MathJax dynamic>{currentGateInfo?.alphaEq ?? String.raw`\(\alpha' = (m_{00})\alpha + (m_{01})\beta\)`}</MathJax>
+                      <MathText dynamic>{currentGateInfo?.alphaEq ?? String.raw`\(\alpha' = (m_{00})\alpha + (m_{01})\beta\)`}</MathText>
                     </p>
                     <div className="flex items-center justify-center gap-3 flex-wrap p-1">
                       <div className="w-16 text-center font-mono text-xl text-slate-400 flex items-center justify-center">
-                        <MathJax>{String.raw`$|0\rangle$`}</MathJax>
+                        <MathText>{String.raw`$|0\rangle$`}</MathText>
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-xs">Initial α</p>
@@ -194,21 +210,21 @@ export default function App() {
                       <span className="op-symbol">→</span>
                       <div className="text-center">
                         <p className="font-mono text-xs min-h-4">
-                          <MathJax dynamic>{currentGateInfo?.alphaTerm1 ?? String.raw`\((m_{00})\alpha\)`}</MathJax>
+                          <MathText dynamic>{currentGateInfo?.alphaTerm1 ?? String.raw`\((m_{00})\alpha\)`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
                         <p className="font-mono text-xs min-h-4">
-                          <MathJax dynamic>{currentGateInfo?.alphaTerm2 ?? String.raw`\((m_{01})\beta\)`}</MathJax>
+                          <MathText dynamic>{currentGateInfo?.alphaTerm2 ?? String.raw`\((m_{01})\beta\)`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
                         <p className="font-mono text-xs">
-                          <MathJax>{String.raw`$\alpha'$`}</MathJax>
+                          <MathText>{String.raw`$\alpha'$`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" />
                       </div>
@@ -217,11 +233,11 @@ export default function App() {
 
                   <div className="w-full">
                     <p className="text-center font-mono text-lg mb-2 text-teal-400 min-h-8">
-                      <MathJax dynamic>{currentGateInfo?.betaEq ?? String.raw`\(\beta' = (m_{10})\alpha + (m_{11})\beta\)`}</MathJax>
+                      <MathText dynamic>{currentGateInfo?.betaEq ?? String.raw`\(\beta' = (m_{10})\alpha + (m_{11})\beta\)`}</MathText>
                     </p>
                     <div className="flex items-center justify-center gap-3 flex-wrap p-1">
                       <div className="w-16 text-center font-mono text-xl text-slate-400 flex items-center justify-center">
-                        <MathJax>{String.raw`$|1\rangle$`}</MathJax>
+                        <MathText>{String.raw`$|1\rangle$`}</MathText>
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-xs">Initial β</p>
@@ -230,21 +246,21 @@ export default function App() {
                       <span className="op-symbol">→</span>
                       <div className="text-center">
                         <p className="font-mono text-xs min-h-4">
-                          <MathJax dynamic>{currentGateInfo?.betaTerm1 ?? String.raw`\((m_{10})\alpha\)`}</MathJax>
+                          <MathText dynamic>{currentGateInfo?.betaTerm1 ?? String.raw`\((m_{10})\alpha\)`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.b1} color="#5eead4" />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
                         <p className="font-mono text-xs min-h-4">
-                          <MathJax dynamic>{currentGateInfo?.betaTerm2 ?? String.raw`\((m_{11})\beta\)`}</MathJax>
+                          <MathText dynamic>{currentGateInfo?.betaTerm2 ?? String.raw`\((m_{11})\beta\)`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.b2} color="#5eead4" />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
                         <p className="font-mono text-xs">
-                          <MathJax>{String.raw`$\beta'$`}</MathJax>
+                          <MathText>{String.raw`$\beta'$`}</MathText>
                         </p>
                         <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" />
                       </div>
