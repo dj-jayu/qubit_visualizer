@@ -1,7 +1,7 @@
 // src/components/GateControlPanel.jsx
 
 import React from 'react';
-import { MathJax } from 'better-react-mathjax';
+import MathText from './MathText';
 import { GATE_INFO } from '../lib/gates';
 import { snapAngle, fmt, radToDeg } from '../lib/utils';
 
@@ -43,7 +43,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
             className={`btn ${gate.type === key ? "active" : ""}`}
             onClick={() => onGateTypeChange(key)}
           >
-            <MathJax>{`$${GATE_INFO[key].nameLatex}$`}</MathJax>
+            <MathText>{`$${GATE_INFO[key].nameLatex}$`}</MathText>
           </button>
         ))}
       </div>
@@ -78,7 +78,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
         {gateParams.map((p) => (
           <div key={p.id} className="flex items-center justify-center mb-2">
             <label className="block text-sm font-medium text-slate-300 w-20 text-center">
-              <MathJax>{`$${p.label}$`}</MathJax>
+              <MathText>{`$${p.label}$`}</MathText>
             </label>
             <input
               type="range"
@@ -97,7 +97,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
 
         {/* Gate Matrix Display */}
         <div className="mt-5 text-center text-lg overflow-x-auto p-2">
-          <MathJax dynamic>{currentGateInfo?.matrixLatex ?? ""}</MathJax>
+          <MathText dynamic>{currentGateInfo?.matrixLatex ?? ""}</MathText>
         </div>
       </div>
     </section>

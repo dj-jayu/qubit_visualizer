@@ -1,7 +1,7 @@
 // src/components/StateControlPanel.jsx
 
 import React from "react";
-import { MathJax } from "better-react-mathjax";
+import MathText from "./MathText";
 import { PI, TAU, fmt } from "../lib/utils";
 
 export default function StateControlPanel({ init, setInit, presets, onPreset }) {
@@ -11,7 +11,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
     <section className="panel" aria-labelledby="custom-state-title">
       <div className="panel-header">
         <h3 id="custom-state-title" className="text-xl text-white">
-          <MathJax>{String.raw`1) Custom Initial State $(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle)$`}</MathJax>
+          <MathText>{String.raw`1) Custom Initial State $(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle)$`}</MathText>
         </h3>
       </div>
 
@@ -19,11 +19,11 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
         {/* alpha phase */}
         <div className="flex items-center gap-4">
           <p className="font-mono text-xl text-indigo-300 w-16 text-center">
-            <MathJax>{String.raw`$\alpha$`}</MathJax>
+            <MathText>{String.raw`$\alpha$`}</MathText>
           </p>
           <div className="flex-grow">
             <label className="block text-sm font-medium text-slate-300">
-              <MathJax>{String.raw`Phase $\phi_\alpha$`}</MathJax>
+              <MathText>{String.raw`Phase $\phi_\alpha$`}</MathText>
             </label>
             <input
               type="range"
@@ -59,11 +59,11 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
         {/* beta phase */}
         <div className="flex items-center gap-4">
           <p className="font-mono text-xl text-teal-300 w-16 text-center">
-            <MathJax>{String.raw`$\beta$`}</MathJax>
+            <MathText>{String.raw`$\beta$`}</MathText>
           </p>
           <div className="flex-grow">
             <label className="block text-sm font-medium text-slate-300">
-              <MathJax>{String.raw`Phase $\phi_\beta$`}</MathJax>
+              <MathText>{String.raw`Phase $\phi_\beta$`}</MathText>
             </label>
             <input
               type="range"
@@ -85,7 +85,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
           <div className="flex flex-wrap gap-2 justify-center">
             {Object.keys(presets).map((k) => (
               <button key={k} className={`btn ${JSON.stringify(init) === JSON.stringify(presets[k]) ? "active" : ""}`} onClick={() => onPreset(k)}>
-                <MathJax>{`$|${k}\\rangle$`}</MathJax>
+                <MathText>{`$|${k}\\rangle$`}</MathText>
               </button>
             ))}
           </div>
