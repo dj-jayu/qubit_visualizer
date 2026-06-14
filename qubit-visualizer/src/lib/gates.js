@@ -137,7 +137,6 @@ export const GATE_INFO = {
   T: {
     nameLatex: "T",
     matrix: String.raw`$$T = \begin{pmatrix} 1 & 0 \\ 0 & e^{i\pi/4} \end{pmatrix}$$`,
-    params: [],
     alphaEq:    String.raw`\(\alpha' = (1)\alpha + (0)\beta\)`,
     betaEq:     String.raw`\(\beta'  = (0)\alpha + (e^{i\pi/4})\beta\)`,
     alphaTerm1: String.raw`\((1)\alpha\)`,

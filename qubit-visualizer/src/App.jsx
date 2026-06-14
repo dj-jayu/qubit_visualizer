@@ -1,22 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { MathJaxContext, MathJax } from "better-react-mathjax";
+import { MathJax } from "better-react-mathjax";
 
-import { PI, TAU, polar, fmt, radToDeg, probText } from "./lib/utils";
+import { PI, TAU, polar, probText } from "./lib/utils";
 import { GATE_INFO, computeGate } from "./lib/gates";
 
 import BlochSphere from "./components/BlochSphere";
 import ComplexPlaneCanvas from "./components/ComplexPlaneCanvas";
 import StateControlPanel from "./components/StateControlPanel";
 import GateControlPanel from "./components/GateControlPanel";
-
-// Define the config object outside the component so it's not recreated on every render.
-const mathJaxConfig = {
-  tex: {
-    inlineMath: [["$", "$"], ["\\(", "\\)"]],
-    displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-  },
-  loader: { load: ["input/tex", "output/chtml"] },
-};
 
 export default function App() {
   const [angleUnit, setAngleUnit] = useState("rad");
@@ -87,7 +78,6 @@ export default function App() {
   };
 
   return (
-    <MathJaxContext version={3} config={mathJaxConfig}>
       <div
         className="p-4 md:p-8 min-h-screen"
         style={{
@@ -266,6 +256,5 @@ export default function App() {
           </main>
         </div>
       </div>
-    </MathJaxContext>
   );
 }
