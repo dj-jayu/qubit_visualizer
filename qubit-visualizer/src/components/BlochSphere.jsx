@@ -141,8 +141,18 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24 }) {
     return () => {
       cancelAnimationFrame(rafId);
       ro.disconnect();
+      controls.dispose();
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+          mats.forEach((m) => { if (m.map) m.map.dispose(); m.dispose(); });
+        }
+      });
       renderer.dispose();
-      container.removeChild(renderer.domElement);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, [vectorColor]);
 
