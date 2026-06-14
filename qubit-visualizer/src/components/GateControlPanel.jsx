@@ -97,7 +97,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
 
         {/* Gate Matrix Display */}
         <div className="mt-5 text-center text-lg overflow-x-auto p-2">
-          <MathJax dynamic>{currentGateInfo?.matrix ?? ""}</MathJax>
+          <MathJax dynamic>{currentGateInfo?.matrixLatex ?? ""}</MathJax>
         </div>
       </div>
     </section>
