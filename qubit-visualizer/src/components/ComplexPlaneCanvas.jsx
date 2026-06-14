@@ -9,13 +9,21 @@ export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 1
   useEffect(() => {
       const canvas = ref.current;
       if (!canvas) return;
+
+      // Scale the backing store by the device pixel ratio so lines stay crisp
+      // on HiDPI/retina displays; draw in CSS pixels via the transform below.
+      const dpr = window.devicePixelRatio || 1;
+      const w = size;
+      const h = size;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+
       const ctx = canvas.getContext("2d");
-      const w = canvas.width;
-      const h = canvas.height;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const cx = w / 2;
       const cy = h / 2;
       const scale = w / 2.2;
-  
+
       ctx.clearRect(0, 0, w, h);
   
       // axes
@@ -67,7 +75,7 @@ export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 1
 
   return (
     <div className="canvas-container" style={{ width: size, height: size }}>
-      <canvas ref={ref} width={size} height={size} />
+      <canvas ref={ref} style={{ width: size, height: size, display: "block" }} />
     </div>
   );
 }
