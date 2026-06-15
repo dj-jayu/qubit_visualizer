@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import MathText from "./components/MathText";
 
 import { PI, TAU, polar, probText, blochVector, fmt, polarText } from "./lib/utils";
@@ -20,6 +20,27 @@ export default function App() {
   const [gate, setGate] = useState({ type: "Rz", theta: PI, phi: 0, lambda: 0, vx: 1, vy: 0, vz: 0 });
   const [init, setInit] = useState({ magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: 0 }); // |+>
   const [status, setStatus] = useState("");
+  const [calcHeight, setCalcHeight] = useState(320); // px height of the calculation panel
+  const mainRef = useRef(null);
+
+  // Drag the divider to resize the spheres (top) vs. calculation (bottom) split.
+  const startResize = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = calcHeight;
+    const container = mainRef.current;
+    const maxH = container ? container.clientHeight - 200 : 900;
+    const onMove = (ev) => {
+      const dy = startY - ev.clientY; // drag up → taller calculation panel
+      setCalcHeight(Math.max(150, Math.min(maxH, startH + dy)));
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
 
   const presets = useMemo(
     () => ({
@@ -39,6 +60,10 @@ export default function App() {
     const magB = Math.sin(init.magnitudeAngle);
     return { alpha: polar(magA, init.alphaPhase), beta: polar(magB, init.betaPhase) };
   }, [init]);
+
+  // Complex-plane size grows/shrinks with the calculation panel height
+  // (two stacked rows, minus padding and captions), clamped to a sane range.
+  const planeSize = Math.max(92, Math.min(190, Math.round((calcHeight - 70) / 2)));
 
   const math = useMemo(() => computeGate(alpha, beta, gate), [alpha, beta, gate]);
   const rotationAxis = useMemo(() => getRotationAxis(gate), [gate]);
@@ -163,9 +188,9 @@ export default function App() {
             />
           </aside>
 
-          {/* Right: spheres fill, calculation sits below */}
-          <main className="grid grid-rows-[minmax(0,1fr)_auto] gap-3 min-h-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0">
+          {/* Right: spheres fill, calculation sits below; divider resizes them */}
+          <main ref={mainRef} className="flex flex-col min-h-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0 flex-1">
               <section className="panel flex flex-col gap-2 min-h-0">
                 <div className="panel-header justify-between w-full shrink-0 m-0">
                   <h3 className="text-base text-white">
@@ -176,7 +201,7 @@ export default function App() {
                     <span className="font-mono text-slate-300 ml-1">{probText(alpha, beta)}</span>
                   </div>
                 </div>
-                <BlochSphere alpha={alpha} beta={beta} vectorColor={0xfbbf24} />
+                <BlochSphere alpha={alpha} beta={beta} vectorColor={0xfbbf24} onPickState={onPreset} />
                 <div className="text-xs text-slate-400 self-start shrink-0">
                   Bloch <span className="font-mono text-slate-300">x, y, z = {blochText(alpha, beta)}</span>
                 </div>
@@ -204,8 +229,20 @@ export default function App() {
               </section>
             </div>
 
+            {/* Draggable divider between spheres and calculation */}
+            <div
+              role="separator"
+              aria-orientation="horizontal"
+              onPointerDown={startResize}
+              className="group flex items-center justify-center cursor-row-resize select-none touch-none"
+              style={{ height: 14 }}
+              title="Drag to resize"
+            >
+              <div className="h-1 w-20 rounded-full bg-slate-600 group-hover:bg-indigo-400 transition-colors" />
+            </div>
+
             {/* Final state calculation */}
-            <section className="panel shrink-0">
+            <section className="panel shrink-0 overflow-y-auto" style={{ height: calcHeight }}>
               <div className="flex flex-col items-stretch gap-3">
                   {/* alpha row: planes/values on the left, formula on the right */}
                   <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap">
@@ -215,22 +252,22 @@ export default function App() {
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α = {polarText(alpha)}</p>
-                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={108} onChange={onDragInitial("alpha")} title="Drag the arrow to set α" />
+                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={planeSize} onChange={onDragInitial("alpha")} title="Drag the arrow to set α" />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a1)}</p>
-                        <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" size={108} />
+                        <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" size={planeSize} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a2)}</p>
-                        <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" size={108} />
+                        <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" size={planeSize} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α' = {polarText(math.finalAlpha)}</p>
-                        <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" size={108} />
+                        <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" size={planeSize} />
                       </div>
                     </div>
                     <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-indigo-400">
@@ -248,22 +285,22 @@ export default function App() {
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β = {polarText(beta)}</p>
-                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={108} onChange={onDragInitial("beta")} title="Drag the arrow to set β" />
+                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={planeSize} onChange={onDragInitial("beta")} title="Drag the arrow to set β" />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b1)}</p>
-                        <ComplexPlaneCanvas vector={math.b1} color="#5eead4" size={108} />
+                        <ComplexPlaneCanvas vector={math.b1} color="#5eead4" size={planeSize} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b2)}</p>
-                        <ComplexPlaneCanvas vector={math.b2} color="#5eead4" size={108} />
+                        <ComplexPlaneCanvas vector={math.b2} color="#5eead4" size={planeSize} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β' = {polarText(math.finalBeta)}</p>
-                        <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" size={108} />
+                        <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" size={planeSize} />
                       </div>
                     </div>
                     <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-teal-400">

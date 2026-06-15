@@ -53,8 +53,12 @@ function makeCircle(plane, color, opacity, segments = 96) {
   return new THREE.LineLoop(geom, mat);
 }
 
-export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotationAxis = null }) {
+export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotationAxis = null, onPickState }) {
   const mountRef = useRef(null);
+  // Keep the latest onPickState in a ref so the click handler (created once in
+  // the setup effect) always calls the current callback.
+  const onPickRef = useRef(onPickState);
+  useEffect(() => { onPickRef.current = onPickState; }, [onPickState]);
   const vectorRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -122,17 +126,18 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotat
     // eigenstate labels at the six axis tips, colored to match their axes.
     // (z = |0⟩/|1⟩, x = |+⟩/|−⟩ red, y = |i⟩/|−i⟩ blue)
     const labels = new THREE.Group();
-    const addKet = (text, color, x, y, z) => {
+    const addKet = (text, color, x, y, z, key) => {
       const sprite = makeLabelSprite(text, color, 96, 0.5);
       sprite.position.set(x, y, z);
+      sprite.userData.stateKey = key; // matches the preset keys in App
       labels.add(sprite);
     };
-    addKet("|0⟩", "#e2e8f0", 0, 1.5, 0);
-    addKet("|1⟩", "#e2e8f0", 0, -1.5, 0);
-    addKet("|+⟩", "#f87171", 1.5, 0, 0);
-    addKet("|-⟩", "#f87171", -1.5, 0, 0);
-    addKet("|i⟩", "#60a5fa", 0, 0, -1.5);
-    addKet("|-i⟩", "#60a5fa", 0, 0, 1.5);
+    addKet("|0⟩", "#e2e8f0", 0, 1.5, 0, "0");
+    addKet("|1⟩", "#e2e8f0", 0, -1.5, 0, "1");
+    addKet("|+⟩", "#f87171", 1.5, 0, 0, "+");
+    addKet("|-⟩", "#f87171", -1.5, 0, 0, "-");
+    addKet("|i⟩", "#60a5fa", 0, 0, -1.5, "i");
+    addKet("|-i⟩", "#60a5fa", 0, 0, 1.5, "-i");
     scene.add(labels);
 
     // state vector (cylinder + cone)
@@ -184,9 +189,38 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotat
     });
     ro.observe(container);
 
+    // --- clickable eigenstate labels (active only when onPickState is set) ---
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let downX = 0, downY = 0;
+    const labelsAt = (clientX, clientY) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      return raycaster.intersectObjects(labels.children, false);
+    };
+    const onDomDown = (ev) => { downX = ev.clientX; downY = ev.clientY; };
+    const onDomUp = (ev) => {
+      if (!onPickRef.current) return;
+      if (Math.hypot(ev.clientX - downX, ev.clientY - downY) > 6) return; // ignore drags
+      const hits = labelsAt(ev.clientX, ev.clientY);
+      if (hits.length) onPickRef.current(hits[0].object.userData.stateKey);
+    };
+    const onDomMove = (ev) => {
+      if (!onPickRef.current || ev.buttons !== 0) return; // skip while orbiting
+      renderer.domElement.style.cursor = labelsAt(ev.clientX, ev.clientY).length ? "pointer" : "default";
+    };
+    renderer.domElement.addEventListener("pointerdown", onDomDown);
+    renderer.domElement.addEventListener("pointerup", onDomUp);
+    renderer.domElement.addEventListener("pointermove", onDomMove);
+
     return () => {
       cancelAnimationFrame(rafId);
       ro.disconnect();
+      renderer.domElement.removeEventListener("pointerdown", onDomDown);
+      renderer.domElement.removeEventListener("pointerup", onDomUp);
+      renderer.domElement.removeEventListener("pointermove", onDomMove);
       controls.dispose();
       scene.traverse((obj) => {
         if (obj.geometry) obj.geometry.dispose();

@@ -119,7 +119,7 @@ export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 1
           width: size,
           height: size,
           display: "block",
-          cursor: onChange ? (draggingRef.current ? "grabbing" : "grab") : "default",
+          cursor: onChange ? "crosshair" : "default",
           touchAction: onChange ? "none" : "auto",
         }}
       />
