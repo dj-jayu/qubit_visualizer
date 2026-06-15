@@ -66,4 +66,4 @@ This is a learning and visualization tool — not a full-featured quantum simula
 
 ## License
 
-[MIT License](LICENSE) — free to use, modify, and share.
+[MIT License](LICENSE) — free to use, modify, and share, provided the original copyright notice and credit to the author are retained.
