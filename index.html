@@ -3,12 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Qubit Gate Visualizer</title>
+
+    <title>Qubit Visualizer — Interactive Bloch Sphere & Quantum Gate Simulator</title>
+    <meta
+      name="description"
+      content="Interactive qubit and quantum gate visualizer. See how single-qubit gates (X, Y, Z, Hadamard, S, T, phase, and Rx/Ry/Rz rotations) transform a qubit's state on the Bloch sphere and on two complex planes, with live amplitude and phase details."
+    />
+    <meta name="keywords" content="qubit, quantum computing, Bloch sphere, quantum gates, Hadamard, Pauli, rotation gates, phase gate, complex amplitudes, quantum state visualization" />
+    <meta name="author" content="dj-jayu" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="canonical" href="https://dj-jayu.github.io/qubit_visualizer/" />
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Qubit Visualizer — Interactive Bloch Sphere & Quantum Gate Simulator" />
+    <meta property="og:description" content="See how quantum gates transform a qubit's state on the Bloch sphere and two complex planes, with live amplitude and phase details." />
+    <meta property="og:url" content="https://dj-jayu.github.io/qubit_visualizer/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Qubit Visualizer — Interactive Bloch Sphere & Quantum Gate Simulator" />
+    <meta name="twitter:description" content="Interactive qubit and quantum gate visualizer on the Bloch sphere and two complex planes." />
     <script type="module" crossorigin src="/qubit_visualizer/assets/index-CWAgCvDf.js"></script>
     <link rel="stylesheet" crossorigin href="/qubit_visualizer/assets/index-DedV27m3.css">
   </head>
   <body class="min-h-screen bg-slate-900 text-slate-100">
-    <div id="root"></div>
-    <!-- Use a relative path so it also works if deployed under a subpath -->
+    <!-- Crawlable fallback content: React replaces this once the app mounts, but
+         search engines and the first paint still see a real description. -->
+    <div id="root">
+      <main style="max-width: 48rem; margin: 0 auto; padding: 2rem; font-family: system-ui, sans-serif;">
+        <h1>Qubit Visualizer</h1>
+        <p>
+          An interactive visualization of a single qubit and how quantum gates
+          transform its state, shown both on the <strong>Bloch sphere</strong> and on
+          <strong>two complex planes</strong> (the amplitudes of |0⟩ and |1⟩).
+        </p>
+        <p>
+          Explore single-qubit gates including X, Y, Z, the Hadamard gate (H),
+          phase gates (S, T, P) and the rotation gates Rx, Ry and Rz, and watch how
+          each one changes the qubit's amplitude and phase. Loading the interactive app…
+        </p>
+      </main>
+    </div>
+    <!-- Use a relative path so it also works if deployed under a subpath -->
   </body>
 </html>
