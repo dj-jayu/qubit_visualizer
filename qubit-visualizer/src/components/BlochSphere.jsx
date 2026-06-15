@@ -242,5 +242,5 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotat
     axisRef.current = line;
   }, [axisX, axisY, axisZ]);
 
-  return <div ref={mountRef} className="bloch-sphere-container w-full min-h-[380px] h-[45vh]" />;
+  return <div ref={mountRef} className="bloch-sphere-container w-full flex-1 min-h-0" />;
 }

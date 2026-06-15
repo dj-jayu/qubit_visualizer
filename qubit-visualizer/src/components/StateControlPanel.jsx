@@ -10,12 +10,12 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
   return (
     <section className="panel" aria-labelledby="custom-state-title">
       <div className="panel-header">
-        <h3 id="custom-state-title" className="text-xl text-white">
+        <h3 id="custom-state-title" className="text-base text-white">
           <MathText>{String.raw`1) Custom Initial State $(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle)$`}</MathText>
         </h3>
       </div>
 
-      <div className="flex flex-col gap-3 p-1">
+      <div className="flex flex-col gap-2.5 p-1">
         {/* alpha phase */}
         <div className="flex items-center gap-4">
           <p className="font-mono text-xl text-indigo-300 w-16 text-center">
@@ -78,13 +78,13 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
         </div>
 
         {/* Presets */}
-        <div className="mt-4">
+        <div className="mt-2">
           <label className="block text-sm font-medium text-slate-300 text-center mb-2">
             Initial State Presets
           </label>
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-1.5 justify-center">
             {Object.keys(presets).map((k) => (
-              <button key={k} className={`btn ${JSON.stringify(init) === JSON.stringify(presets[k]) ? "active" : ""}`} onClick={() => onPreset(k)}>
+              <button key={k} className={`btn btn-sm ${JSON.stringify(init) === JSON.stringify(presets[k]) ? "active" : ""}`} onClick={() => onPreset(k)}>
                 <MathText>{`$|${k}\\rangle$`}</MathText>
               </button>
             ))}

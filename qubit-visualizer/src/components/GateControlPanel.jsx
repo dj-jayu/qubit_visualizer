@@ -32,15 +32,15 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
   return (
     <section className="panel" aria-labelledby="gate-select-title">
       <div className="panel-header">
-        <h3 id="gate-select-title" className="text-xl text-white">2) Select Gate</h3>
+        <h3 id="gate-select-title" className="text-base text-white">2) Select Gate</h3>
       </div>
 
       {/* Gate Selection Buttons */}
-      <div className="flex flex-wrap gap-2 justify-center" id="gate-select-buttons">
+      <div className="grid grid-cols-5 gap-1.5" id="gate-select-buttons">
         {Object.keys(GATE_INFO).map((key) => (
           <button
             key={key}
-            className={`btn ${gate.type === key ? "active" : ""}`}
+            className={`btn btn-sm ${gate.type === key ? "active" : ""}`}
             onClick={() => onGateTypeChange(key)}
           >
             <MathText>{`$${GATE_INFO[key].nameLatex}$`}</MathText>
@@ -49,24 +49,24 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
       </div>
 
       {/* Gate Parameter Sliders */}
-      <div className="mt-5" id="gate-params-container">
+      <div className="mt-4" id="gate-params-container">
         {gateParams.length > 0 && (
-          <label className="block text-base font-medium mb-2 text-slate-300 text-center">
+          <label className="block text-sm font-medium mb-2 text-slate-300 text-center">
             Gate Parameters
           </label>
         )}
 
         {/* Angle unit toggle */}
         {showAngleUnitsToggle && (
-          <div className="text-center mb-4">
-            <button 
-              className={`btn text-xs px-2 py-1 ${angleUnit === "rad" ? "active" : ""}`} 
+          <div className="text-center mb-3">
+            <button
+              className={`btn btn-sm ${angleUnit === "rad" ? "active" : ""}`}
               onClick={() => { setAngleUnit("rad"); setStatus("Angle unit set to rad."); }}
             >
               Radians
             </button>
-            <button 
-              className={`btn text-xs px-2 py-1 ml-2 ${angleUnit === "deg" ? "active" : ""}`} 
+            <button
+              className={`btn btn-sm ml-2 ${angleUnit === "deg" ? "active" : ""}`}
               onClick={() => { setAngleUnit("deg"); setStatus("Angle unit set to deg."); }}
             >
               Degrees
@@ -96,7 +96,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
         ))}
 
         {/* Gate Matrix Display */}
-        <div className="mt-5 text-center text-lg overflow-x-auto p-2">
+        <div className="mt-3 text-center text-base overflow-x-auto p-1">
           <MathText dynamic>{currentGateInfo?.matrixLatex ?? ""}</MathText>
         </div>
       </div>

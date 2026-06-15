@@ -14,6 +14,13 @@ export function probText(a, b) {
   return `|0⟩=${p0}, |1⟩=${p1}`;
 }
 
+// Format a complex number {re, im} as "a + bi" (using a real minus sign).
+export function cText(z, d = 2) {
+  if (!z || !Number.isFinite(z.re) || !Number.isFinite(z.im)) return "—";
+  const sign = z.im < 0 ? "−" : "+";
+  return `${fmt(z.re, d)} ${sign} ${fmt(Math.abs(z.im), d)}i`;
+}
+
 // --- Complex Number Helpers ---
 export function complex(re = 0, im = 0) { return { re, im }; }
 export function cMul(a, b) { return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }; }
