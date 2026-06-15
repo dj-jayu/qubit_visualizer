@@ -10,6 +10,18 @@ const blochText = (a, b) => {
   return `(${fmt(x, 2)}, ${fmt(y, 2)}, ${fmt(z, 2)})`;
 };
 
+// Source colors: amplitudes derived from α are indigo, from β are teal. Used to
+// color the term canvases, captions, and the α/β symbols inside the formula so
+// the user can see each term's origin.
+const A_COL = "#a5b4fc"; // from α (indigo)
+const B_COL = "#5eead4"; // from β (teal)
+// MathJax's \color is a switch that colors the rest of the group, so each one
+// must be wrapped in its own braces to color only that symbol.
+const colorAmps = (latex) =>
+  (latex ?? "")
+    .replaceAll("\\alpha", `{\\color{${A_COL}}\\alpha}`)
+    .replaceAll("\\beta", `{\\color{${B_COL}}\\beta}`);
+
 import BlochSphere from "./components/BlochSphere";
 import ComplexPlaneCanvas from "./components/ComplexPlaneCanvas";
 import StateControlPanel from "./components/StateControlPanel";
@@ -260,13 +272,13 @@ export default function App() {
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a1)}</p>
-                        <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" size={planeSize} />
+                        <p className="font-mono text-[11px] leading-tight whitespace-nowrap text-slate-300">m<sub>00</sub>·<span style={{ color: A_COL }}>α</span></p>
+                        <ComplexPlaneCanvas vector={math.a1} color={A_COL} size={planeSize} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a2)}</p>
-                        <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" size={planeSize} />
+                        <p className="font-mono text-[11px] leading-tight whitespace-nowrap text-slate-300">m<sub>01</sub>·<span style={{ color: B_COL }}>β</span></p>
+                        <ComplexPlaneCanvas vector={math.a2} color={B_COL} size={planeSize} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
@@ -274,8 +286,8 @@ export default function App() {
                         <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" size={planeSize} />
                       </div>
                     </div>
-                    <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-indigo-400">
-                      <MathText dynamic>{currentGateInfo?.alphaEq ?? String.raw`\(\alpha' = (m_{00})\alpha + (m_{01})\beta\)`}</MathText>
+                    <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-slate-200">
+                      <MathText dynamic>{colorAmps(currentGateInfo?.alphaEq ?? String.raw`\(\alpha' = (m_{00})\alpha + (m_{01})\beta\)`)}</MathText>
                     </p>
                   </div>
 
@@ -293,13 +305,13 @@ export default function App() {
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b1)}</p>
-                        <ComplexPlaneCanvas vector={math.b1} color="#5eead4" size={planeSize} />
+                        <p className="font-mono text-[11px] leading-tight whitespace-nowrap text-slate-300">m<sub>10</sub>·<span style={{ color: A_COL }}>α</span></p>
+                        <ComplexPlaneCanvas vector={math.b1} color={A_COL} size={planeSize} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b2)}</p>
-                        <ComplexPlaneCanvas vector={math.b2} color="#5eead4" size={planeSize} />
+                        <p className="font-mono text-[11px] leading-tight whitespace-nowrap text-slate-300">m<sub>11</sub>·<span style={{ color: B_COL }}>β</span></p>
+                        <ComplexPlaneCanvas vector={math.b2} color={B_COL} size={planeSize} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
@@ -307,8 +319,8 @@ export default function App() {
                         <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" size={planeSize} />
                       </div>
                     </div>
-                    <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-teal-400">
-                      <MathText dynamic>{currentGateInfo?.betaEq ?? String.raw`\(\beta' = (m_{10})\alpha + (m_{11})\beta\)`}</MathText>
+                    <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-slate-200">
+                      <MathText dynamic>{colorAmps(currentGateInfo?.betaEq ?? String.raw`\(\beta' = (m_{10})\alpha + (m_{11})\beta\)`)}</MathText>
                     </p>
                   </div>
                 </div>

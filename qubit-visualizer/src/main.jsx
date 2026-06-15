@@ -9,8 +9,9 @@ import './index.css';
 // Use the FULL configuration object
 const config = {
   // This line tells MathJax to load the TeX input and HTML output components
-  loader: { load: ["input/tex", "output/chtml"] },
+  loader: { load: ["input/tex", "output/chtml", "[tex]/color"] },
   tex: {
+    packages: { "[+]": ["color"] },
     inlineMath: [["$", "$"], ["\\(", "\\)"]],
     displayMath: [["$$", "$$"], ["\\[", "\\]"]],
   },
