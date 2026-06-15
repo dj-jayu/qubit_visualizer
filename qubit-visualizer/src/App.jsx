@@ -78,6 +78,22 @@ export default function App() {
     setStatus("Randomized parameters.");
   };
 
+  // Dragging an initial-state arrow sets that amplitude's phase and the
+  // magnitude split. Magnitudes stay normalized (|α|=cos θ, |β|=sin θ), so
+  // lengthening one arrow shortens the other automatically. Phase is preserved
+  // near the origin to avoid jitter when the arrow length is ~0.
+  const onDragInitial = (which) => ({ re, im }) => {
+    const mag = Math.min(1, Math.hypot(re, im));
+    let phase = Math.atan2(im, re);
+    if (phase < 0) phase += TAU;
+    setInit((s) => {
+      const magnitudeAngle = which === "alpha" ? Math.acos(mag) : Math.asin(mag);
+      const phaseKey = which === "alpha" ? "alphaPhase" : "betaPhase";
+      return { ...s, magnitudeAngle, [phaseKey]: mag < 0.02 ? s[phaseKey] : phase };
+    });
+    setStatus(`Set ${which} from the complex plane.`);
+  };
+
   const onReset = () => {
     setGate({ type: "Rz", theta: PI, phi: 0, lambda: 0, vx: 1, vy: 0, vz: 0 });
     onPreset("+");
@@ -199,7 +215,7 @@ export default function App() {
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α = {polarText(alpha)}</p>
-                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={108} />
+                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={108} onChange={onDragInitial("alpha")} title="Drag the arrow to set α" />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
@@ -232,7 +248,7 @@ export default function App() {
                       </div>
                       <div className="text-center">
                         <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β = {polarText(beta)}</p>
-                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={108} />
+                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={108} onChange={onDragInitial("beta")} title="Drag the arrow to set β" />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">

@@ -7,12 +7,24 @@ import { PI, TAU, fmt } from "../lib/utils";
 export default function StateControlPanel({ init, setInit, presets, onPreset }) {
   const setInitField = (k, v) => setInit((s) => ({ ...s, [k]: v }));
 
+  const magA = Math.cos(init.magnitudeAngle);
+  const magB = Math.sin(init.magnitudeAngle);
+
   return (
     <section className="panel" aria-labelledby="custom-state-title">
-      <div className="panel-header">
-        <h3 id="custom-state-title" className="text-base text-white">
-          <MathText>{String.raw`1) Custom Initial State $(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle)$`}</MathText>
+      <div className="mb-2">
+        {/* Title + static symbolic form on line 1; live numeric polar form on
+            line 2. The numeric part is plain text, not MathJax, so it
+            re-renders instantly while sliders are dragged. */}
+        <h3 id="custom-state-title" className="text-base text-white flex items-baseline gap-2 flex-wrap">
+          <span>1) Initial State</span>
+          <MathText>{String.raw`$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$`}</MathText>
         </h3>
+        <div className="text-sm text-white leading-snug mt-1">
+          <span className="font-mono text-slate-200">
+            = ({fmt(magA, 2)} e<sup>i{fmt(init.alphaPhase, 2)}</sup>)|0⟩ + ({fmt(magB, 2)} e<sup>i{fmt(init.betaPhase, 2)}</sup>)|1⟩
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 p-1">

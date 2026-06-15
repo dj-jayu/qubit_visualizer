@@ -3,8 +3,39 @@
 import React, { useRef, useEffect } from 'react';
 import { PI, TAU } from '../lib/utils';
 
-export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 120 }) {
+export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 120, onChange, title }) {
   const ref = useRef(null);
+  const draggingRef = useRef(false);
+
+  // Convert a pointer event to complex {re, im} using the same transform as the
+  // draw code (cx, cy, scale below). Im points up, so it is negated.
+  const emit = (e) => {
+    const canvas = ref.current;
+    if (!canvas || !onChange) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = size / 2;
+    const cy = size / 2;
+    const scale = size / 2.2;
+    const re = (e.clientX - rect.left - cx) / scale;
+    const im = (cy - (e.clientY - rect.top)) / scale;
+    onChange({ re, im });
+  };
+
+  const onPointerDown = (e) => {
+    if (!onChange) return;
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    emit(e);
+  };
+  const onPointerMove = (e) => {
+    if (!onChange || !draggingRef.current) return;
+    emit(e);
+  };
+  const onPointerUp = (e) => {
+    if (!onChange) return;
+    draggingRef.current = false;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  };
 
   useEffect(() => {
       const canvas = ref.current;
@@ -74,8 +105,24 @@ export default function ComplexPlaneCanvas({ vector, color = "#fbbf24", size = 1
     }, [vector, color, size]);
 
   return (
-    <div className="canvas-container" style={{ width: size, height: size }}>
-      <canvas ref={ref} style={{ width: size, height: size, display: "block" }} />
+    <div
+      className="canvas-container"
+      style={{ width: size, height: size, outline: onChange ? "1px dashed #475569" : "none" }}
+      title={title}
+    >
+      <canvas
+        ref={ref}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        style={{
+          width: size,
+          height: size,
+          display: "block",
+          cursor: onChange ? (draggingRef.current ? "grabbing" : "grab") : "default",
+          touchAction: onChange ? "none" : "auto",
+        }}
+      />
     </div>
   );
 }
