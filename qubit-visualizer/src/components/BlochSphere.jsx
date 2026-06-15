@@ -53,7 +53,49 @@ function makeCircle(plane, color, opacity, segments = 96) {
   return new THREE.LineLoop(geom, mat);
 }
 
-export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotationAxis = null, onPickState }) {
+// A small curved arrow encircling `blochAxis`, pointing in the positive
+// (right-hand-rule) rotation direction, plus a faint line along the axis.
+// Built directly in scene space; positive t goes u→v with u×v = axis direction.
+function makeSpinArrow(blochAxis, color = 0x67e8f9) {
+  const d = blochToScene(blochAxis).normalize();
+  const helper = Math.abs(d.x) > 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const u = new THREE.Vector3().crossVectors(helper, d).normalize();
+  const v = new THREE.Vector3().crossVectors(d, u).normalize(); // u × v = d
+  const center = d.clone().multiplyScalar(1.18);
+  const R = 0.22;
+  const segs = 48;
+  const tEnd = Math.PI * 1.6; // leave a gap so the arrowhead reads clearly
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = tEnd * (i / segs);
+    pts.push(center.clone().addScaledVector(u, R * Math.cos(t)).addScaledVector(v, R * Math.sin(t)));
+  }
+
+  const group = new THREE.Group();
+  group.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.95 })
+  ));
+
+  // arrowhead at the arc end, aligned with the tangent (positive direction)
+  const tangent = u.clone().multiplyScalar(-Math.sin(tEnd)).addScaledVector(v, Math.cos(tEnd)).normalize();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.05, 0.13, 12),
+    new THREE.MeshBasicMaterial({ color })
+  );
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+  cone.position.copy(pts[pts.length - 1]);
+  group.add(cone);
+
+  // faint full axis line for context
+  group.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([d.clone().multiplyScalar(-1.3), d.clone().multiplyScalar(1.3)]),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 })
+  ));
+  return group;
+}
+
+export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotationAxis = null, onPickState, spinAxis = null }) {
   const mountRef = useRef(null);
   // Keep the latest onPickState in a ref so the click handler (created once in
   // the setup effect) always calls the current callback.
@@ -67,6 +109,7 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotat
   const targetQuatRef = useRef(new THREE.Quaternion());
   const initializedRef = useRef(false);
   const axisRef = useRef(null);
+  const spinRef = useRef(null);
 
   // setup scene once
   useEffect(() => {
@@ -275,6 +318,30 @@ export default function BlochSphere({ alpha, beta, vectorColor = 0xfbbf24, rotat
     scene.add(line);
     axisRef.current = line;
   }, [axisX, axisY, axisZ]);
+
+  // draw / update the curved "spin" arrow for axis-rotation gates
+  const spinX = spinAxis?.x;
+  const spinY = spinAxis?.y;
+  const spinZ = spinAxis?.z;
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    if (spinRef.current) {
+      scene.remove(spinRef.current);
+      spinRef.current.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+      spinRef.current = null;
+    }
+
+    if (spinX == null || spinY == null || spinZ == null) return;
+
+    const group = makeSpinArrow({ x: spinX, y: spinY, z: spinZ });
+    scene.add(group);
+    spinRef.current = group;
+  }, [spinX, spinY, spinZ]);
 
   return <div ref={mountRef} className="bloch-sphere-container w-full flex-1 min-h-0" />;
 }

@@ -10,9 +10,9 @@ export default function StateControlPanel({ init, setInit, presets, onPreset, an
   const magA = Math.cos(init.magnitudeAngle);
   const magB = Math.sin(init.magnitudeAngle);
 
-  // Phase readouts honor the rad/deg switch; the exponent form omits the unit word.
+  // Phase readouts honor the rad/deg switch. The e^{iθ} exponent in the formula
+  // stays in radians (the mathematically correct unit for an exponent).
   const displayAngle = (rad) => (angleUnit === "deg" ? `${fmt(radToDeg(rad), 0)}°` : `${fmt(rad, 2)} rad`);
-  const expAngle = (rad) => (angleUnit === "deg" ? `${fmt(radToDeg(rad), 0)}°` : fmt(rad, 2));
 
   return (
     <section className="panel" aria-labelledby="custom-state-title">
@@ -42,7 +42,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset, an
         </div>
         <div className="text-sm text-white leading-snug mt-1">
           <span className="font-mono text-slate-200">
-            = ({fmt(magA, 2)} e<sup>i{expAngle(init.alphaPhase)}</sup>)|0⟩ + ({fmt(magB, 2)} e<sup>i{expAngle(init.betaPhase)}</sup>)|1⟩
+            = ({fmt(magA, 2)} e<sup>i{fmt(init.alphaPhase, 2)}</sup>)|0⟩ + ({fmt(magB, 2)} e<sup>i{fmt(init.betaPhase, 2)}</sup>)|1⟩
           </span>
         </div>
       </div>

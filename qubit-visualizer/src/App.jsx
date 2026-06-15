@@ -69,6 +69,11 @@ export default function App() {
   const rotationAxis = useMemo(() => getRotationAxis(gate), [gate]);
   const currentGateInfo = GATE_INFO[gate.type];
 
+  // Axis-rotation gates: show a curved "spin" arrow on the initial sphere so the
+  // user can see which axis is rotated and in which (positive) direction.
+  const SPIN_GATES = ["Rx", "Ry", "Rz", "X", "Y", "Z", "S", "T", "H", "H_theta"];
+  const spinAxis = SPIN_GATES.includes(gate.type) ? rotationAxis : null;
+
   const onPreset = (key) => {
     const p = presets[key];
     if (!p) return;
@@ -200,7 +205,7 @@ export default function App() {
                     <span className="font-mono text-slate-300 ml-1">{probText(alpha, beta)}</span>
                   </div>
                 </div>
-                <BlochSphere alpha={alpha} beta={beta} vectorColor={0xfbbf24} onPickState={onPreset} />
+                <BlochSphere alpha={alpha} beta={beta} vectorColor={0xfbbf24} onPickState={onPreset} spinAxis={spinAxis} />
                 <div className="text-xs text-slate-400 self-start shrink-0">
                   Bloch <span className="font-mono text-slate-300">x, y, z = {blochText(alpha, beta)}</span>
                 </div>
