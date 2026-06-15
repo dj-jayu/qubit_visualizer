@@ -147,8 +147,8 @@ export default function App() {
           .btn.active{background:linear-gradient(180deg,rgba(99,102,241,.35),rgba(99,102,241,.15));border-color:#6366f1;color:white}
           .btn-sm{padding:.25rem .55rem;font-size:.8rem;line-height:1.1;border-radius:.4rem}
           input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;width:100%}
-          input[type=range]::-webkit-slider-runnable-track{height:.4rem;background:#374151;border-radius:9999px;border:1px solid #4b5563}
-          input[type=range]::-moz-range-track{height:.4rem;background:#374151;border-radius:9999px;border:1px solid #4b5563}
+          input[type=range]::-webkit-slider-runnable-track{height:.4rem;background:var(--tick-bg,#374151);border-radius:9999px;border:1px solid #4b5563}
+          input[type=range]::-moz-range-track{height:.4rem;background:var(--tick-bg,#374151);border-radius:9999px;border:1px solid #4b5563}
           input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:.9rem;height:.9rem;background:white;border-radius:9999px;margin-top:-.25rem;box-shadow:0 0 0 2px #6366f1 inset}
           input[type=range]::-moz-range-thumb{width:.9rem;height:.9rem;background:white;border:none;border-radius:9999px;box-shadow:0 0 0 2px #6366f1 inset}
           .op-symbol{display:inline-flex;align-items:center;justify-content:center;width:18px;color:#94a3b8}

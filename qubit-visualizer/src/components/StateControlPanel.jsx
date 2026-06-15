@@ -2,7 +2,7 @@
 
 import React from "react";
 import MathText from "./MathText";
-import { PI, TAU, fmt, radToDeg, snapTo } from "../lib/utils";
+import { PI, TAU, fmt, radToDeg, snapTo, tickBackground } from "../lib/utils";
 
 export default function StateControlPanel({ init, setInit, presets, onPreset, angleUnit, setAngleUnit }) {
   const setInitField = (k, v) => setInit((s) => ({ ...s, [k]: v }));
@@ -63,6 +63,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset, an
             max={PI / 2}
             step={0.01}
             value={init.magnitudeAngle}
+            style={{ "--tick-bg": tickBackground(0, PI / 2, PI / 8, "#94a3b8") }}
             onChange={(e) => setInitField("magnitudeAngle", snapTo(parseFloat(e.target.value), PI / 8))}
           />
         </div>
@@ -80,6 +81,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset, an
             max={TAU}
             step={0.01}
             value={init.alphaPhase}
+            style={{ "--tick-bg": tickBackground(0, TAU, PI / 4, "#818cf8") }}
             onChange={(e) => setInitField("alphaPhase", snapTo(parseFloat(e.target.value), PI / 4))}
           />
         </div>
@@ -97,6 +99,7 @@ export default function StateControlPanel({ init, setInit, presets, onPreset, an
             max={TAU}
             step={0.01}
             value={init.betaPhase}
+            style={{ "--tick-bg": tickBackground(0, TAU, PI / 4, "#5eead4") }}
             onChange={(e) => setInitField("betaPhase", snapTo(parseFloat(e.target.value), PI / 4))}
           />
         </div>

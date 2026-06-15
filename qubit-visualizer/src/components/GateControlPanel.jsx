@@ -3,7 +3,7 @@
 import React from 'react';
 import MathText from './MathText';
 import { GATE_INFO } from '../lib/gates';
-import { snapTo, fmt, radToDeg, PI } from '../lib/utils';
+import { snapTo, fmt, radToDeg, PI, tickBackground } from '../lib/utils';
 
 export default function GateControlPanel({ gate, setGate, angleUnit, setStatus }) {
   const currentGateInfo = GATE_INFO[gate.type];
@@ -69,6 +69,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setStatus }
               value={gate[p.id] ?? 0}
               onChange={(e) => onGateParamChange(p.id, e.target.value)}
               className="mx-4"
+              style={["theta", "phi", "lambda"].includes(p.id) ? { "--tick-bg": tickBackground(p.min, p.max, PI / 4) } : undefined}
             />
             <span className="font-mono text-sm text-indigo-300 w-24 text-right">
               {p.id.startsWith("v") ? fmt(gate[p.id] ?? 0, 2) : displayAngle(gate[p.id] ?? 0)}

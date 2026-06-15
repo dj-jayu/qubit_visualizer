@@ -77,6 +77,16 @@ export function snapAngle(
   return value;
 }
 
+// Build a CSS background that draws tick marks at every `step` along a slider's
+// [min, max] range, layered over the base track color. Assign it to the
+// `--tick-bg` custom property on the range input.
+export function tickBackground(min, max, step, color = "#818cf8", base = "#374151") {
+  const span = max - min;
+  if (!(span > 0) || !(step > 0)) return base;
+  const spacingPct = (step / span) * 100;
+  return `repeating-linear-gradient(90deg, ${color} 0, ${color} 2px, transparent 2px, transparent ${spacingPct}%), ${base}`;
+}
+
 // Soft-lock a value to the nearest multiple of `step`: snaps only when within
 // `threshold` of a multiple, so dragging stays free in between. A small
 // threshold keeps the pull gentle and leaves room for fine values nearby.
