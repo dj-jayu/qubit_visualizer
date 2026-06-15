@@ -21,6 +21,16 @@ export function cText(z, d = 2) {
   return `${fmt(z.re, d)} ${sign} ${fmt(Math.abs(z.im), d)}i`;
 }
 
+// Format a complex number {re, im} in polar form as "magnitude ∠ phase"
+// with the phase in radians on [0, 2π).
+export function polarText(z, d = 2) {
+  if (!z || !Number.isFinite(z.re) || !Number.isFinite(z.im)) return "—";
+  const mag = Math.hypot(z.re, z.im);
+  let phase = Math.atan2(z.im, z.re);
+  if (phase < 0) phase += TAU;
+  return `${fmt(mag, d)} ∠ ${fmt(phase, d)}`;
+}
+
 // --- Complex Number Helpers ---
 export function complex(re = 0, im = 0) { return { re, im }; }
 export function cMul(a, b) { return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }; }

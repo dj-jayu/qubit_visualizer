@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MathText from "./components/MathText";
 
-import { PI, TAU, polar, probText, blochVector, fmt, cText } from "./lib/utils";
+import { PI, TAU, polar, probText, blochVector, fmt, polarText } from "./lib/utils";
 import { GATE_INFO, computeGate, getRotationAxis } from "./lib/gates";
 
 // Compact "x, y, z" readout of a state's Bloch-sphere coordinates.
@@ -20,7 +20,6 @@ export default function App() {
   const [gate, setGate] = useState({ type: "Rz", theta: PI, phi: 0, lambda: 0, vx: 1, vy: 0, vz: 0 });
   const [init, setInit] = useState({ magnitudeAngle: PI / 4, alphaPhase: 0, betaPhase: 0 }); // |+>
   const [status, setStatus] = useState("");
-  const [calcOpen, setCalcOpen] = useState(true);
 
   const presets = useMemo(
     () => ({
@@ -189,19 +188,9 @@ export default function App() {
               </section>
             </div>
 
-            {/* Calculation details */}
+            {/* Final state calculation */}
             <section className="panel shrink-0">
-              <details
-                className="group"
-                open={calcOpen}
-                onToggle={(e) => setCalcOpen(e.currentTarget.open)}
-              >
-                <summary className="cursor-pointer select-none list-none flex items-center justify-between">
-                  <h3 className="text-base font-extrabold text-white">3) Final State Calculation</h3>
-                  <span className="text-slate-400 text-xs">({calcOpen ? "click to collapse" : "click to expand"})</span>
-                </summary>
-
-                <div className="mt-2 flex flex-col items-stretch gap-3">
+              <div className="flex flex-col items-stretch gap-3">
                   {/* alpha row: planes/values on the left, formula on the right */}
                   <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap">
                     <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -209,23 +198,23 @@ export default function App() {
                         <MathText>{String.raw`$|0\rangle$`}</MathText>
                       </div>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α = {cText(alpha)}</p>
-                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α = {polarText(alpha)}</p>
+                        <ComplexPlaneCanvas vector={alpha} color="#818cf8" size={108} />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{cText(math.a1)}</p>
-                        <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a1)}</p>
+                        <ComplexPlaneCanvas vector={math.a1} color="#a5b4fc" size={108} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{cText(math.a2)}</p>
-                        <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.a2)}</p>
+                        <ComplexPlaneCanvas vector={math.a2} color="#a5b4fc" size={108} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α' = {cText(math.finalAlpha)}</p>
-                        <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-indigo-300 whitespace-nowrap">α' = {polarText(math.finalAlpha)}</p>
+                        <ComplexPlaneCanvas vector={math.finalAlpha} color="#6366f1" size={108} />
                       </div>
                     </div>
                     <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-indigo-400">
@@ -242,23 +231,23 @@ export default function App() {
                         <MathText>{String.raw`$|1\rangle$`}</MathText>
                       </div>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β = {cText(beta)}</p>
-                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β = {polarText(beta)}</p>
+                        <ComplexPlaneCanvas vector={beta} color="#2dd4bf" size={108} />
                       </div>
                       <span className="op-symbol">→</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{cText(math.b1)}</p>
-                        <ComplexPlaneCanvas vector={math.b1} color="#5eead4" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b1)}</p>
+                        <ComplexPlaneCanvas vector={math.b1} color="#5eead4" size={108} />
                       </div>
                       <span className="op-symbol">+</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{cText(math.b2)}</p>
-                        <ComplexPlaneCanvas vector={math.b2} color="#5eead4" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-slate-300 whitespace-nowrap">{polarText(math.b2)}</p>
+                        <ComplexPlaneCanvas vector={math.b2} color="#5eead4" size={108} />
                       </div>
                       <span className="op-symbol">=</span>
                       <div className="text-center">
-                        <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β' = {cText(math.finalBeta)}</p>
-                        <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" size={92} />
+                        <p className="font-mono text-[10px] leading-tight text-teal-300 whitespace-nowrap">β' = {polarText(math.finalBeta)}</p>
+                        <ComplexPlaneCanvas vector={math.finalBeta} color="#14b8a6" size={108} />
                       </div>
                     </div>
                     <p className="flex-1 min-w-[220px] max-w-[460px] text-center font-mono text-sm md:text-base text-teal-400">
@@ -266,7 +255,6 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-              </details>
             </section>
           </main>
         </div>

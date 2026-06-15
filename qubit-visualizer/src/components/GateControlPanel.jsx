@@ -36,7 +36,7 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
       </div>
 
       {/* Gate Selection Buttons */}
-      <div className="grid grid-cols-5 gap-1.5" id="gate-select-buttons">
+      <div className="flex flex-wrap gap-1.5 justify-center" id="gate-select-buttons">
         {Object.keys(GATE_INFO).map((key) => (
           <button
             key={key}

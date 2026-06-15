@@ -15,33 +15,16 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
         </h3>
       </div>
 
-      <div className="flex flex-col gap-2.5 p-1">
-        {/* alpha phase */}
-        <div className="flex items-center gap-4">
-          <p className="font-mono text-xl text-indigo-300 w-16 text-center">
-            <MathText>{String.raw`$\alpha$`}</MathText>
-          </p>
-          <div className="flex-grow">
-            <label className="block text-sm font-medium text-slate-300">
-              <MathText>{String.raw`Phase $\phi_\alpha$`}</MathText>
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={TAU}
-              step={0.01}
-              value={init.alphaPhase}
-              onChange={(e) => setInitField("alphaPhase", parseFloat(e.target.value))}
-            />
-            <span className="block text-right font-mono text-indigo-400 text-sm">{`${fmt(init.alphaPhase, 2)} rad`}</span>
-          </div>
-        </div>
-
+      <div className="flex flex-col gap-2 p-1">
         {/* magnitudes */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 text-center">
-            Magnitudes
-          </label>
+          <div className="flex items-baseline justify-between">
+            <label className="text-sm font-medium text-slate-300">Magnitudes</label>
+            <span className="font-mono text-sm">
+              <span className="text-indigo-400">{`|α| = ${fmt(Math.cos(init.magnitudeAngle), 2)}`}</span>
+              <span className="text-teal-400 ml-3">{`|β| = ${fmt(Math.sin(init.magnitudeAngle), 2)}`}</span>
+            </span>
+          </div>
           <input
             type="range"
             min={0}
@@ -50,35 +33,48 @@ export default function StateControlPanel({ init, setInit, presets, onPreset }) 
             value={init.magnitudeAngle}
             onChange={(e) => setInitField("magnitudeAngle", parseFloat(e.target.value))}
           />
-          <div className="flex justify-between font-mono text-sm">
-            <span className="text-indigo-400">{`|α| = ${fmt(Math.cos(init.magnitudeAngle), 2)}`}</span>
-            <span className="text-teal-400">{`|β| = ${fmt(Math.sin(init.magnitudeAngle), 2)}`}</span>
+        </div>
+
+        {/* alpha phase */}
+        <div>
+          <div className="flex items-baseline justify-between">
+            <label className="text-sm font-medium text-slate-300">
+              <span className="font-mono text-indigo-300 mr-1.5">α</span>
+              <MathText>{String.raw`Phase $\phi_\alpha$`}</MathText>
+            </label>
+            <span className="font-mono text-indigo-400 text-sm">{`${fmt(init.alphaPhase, 2)} rad`}</span>
           </div>
+          <input
+            type="range"
+            min={0}
+            max={TAU}
+            step={0.01}
+            value={init.alphaPhase}
+            onChange={(e) => setInitField("alphaPhase", parseFloat(e.target.value))}
+          />
         </div>
 
         {/* beta phase */}
-        <div className="flex items-center gap-4">
-          <p className="font-mono text-xl text-teal-300 w-16 text-center">
-            <MathText>{String.raw`$\beta$`}</MathText>
-          </p>
-          <div className="flex-grow">
-            <label className="block text-sm font-medium text-slate-300">
+        <div>
+          <div className="flex items-baseline justify-between">
+            <label className="text-sm font-medium text-slate-300">
+              <span className="font-mono text-teal-300 mr-1.5">β</span>
               <MathText>{String.raw`Phase $\phi_\beta$`}</MathText>
             </label>
-            <input
-              type="range"
-              min={0}
-              max={TAU}
-              step={0.01}
-              value={init.betaPhase}
-              onChange={(e) => setInitField("betaPhase", parseFloat(e.target.value))}
-            />
-            <span className="block text-right font-mono text-teal-400 text-sm">{`${fmt(init.betaPhase, 2)} rad`}</span>
+            <span className="font-mono text-teal-400 text-sm">{`${fmt(init.betaPhase, 2)} rad`}</span>
           </div>
+          <input
+            type="range"
+            min={0}
+            max={TAU}
+            step={0.01}
+            value={init.betaPhase}
+            onChange={(e) => setInitField("betaPhase", parseFloat(e.target.value))}
+          />
         </div>
 
         {/* Presets */}
-        <div className="mt-2">
+        <div className="mt-1">
           <label className="block text-sm font-medium text-slate-300 text-center mb-2">
             Initial State Presets
           </label>
