@@ -3,20 +3,19 @@
 import React from 'react';
 import MathText from './MathText';
 import { GATE_INFO } from '../lib/gates';
-import { snapAngle, fmt, radToDeg } from '../lib/utils';
+import { snapTo, fmt, radToDeg, PI } from '../lib/utils';
 
-export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUnit, setStatus }) {
+export default function GateControlPanel({ gate, setGate, angleUnit, setStatus }) {
   const currentGateInfo = GATE_INFO[gate.type];
   const gateParams = currentGateInfo?.params ?? [];
-  const showAngleUnitsToggle = gateParams.some((p) => ["theta", "phi", "lambda"].includes(p.id));
 
   const displayAngle = (radians) => (angleUnit === "deg" ? `${fmt(radToDeg(radians), 1)}°` : `${fmt(radians, 2)} rad`);
 
   const onGateParamChange = (id, value) => {
     let v = parseFloat(value);
-    // Apply snapping for specific angle parameters on certain gates
-    if (["Rx", "Ry", "Rz", "P", "R"].includes(gate.type) && ["theta", "phi"].includes(id)) {
-      v = snapAngle(v);
+    // Soft-lock angle parameters to every pi/4 (45°); leave vector components free.
+    if (["theta", "phi", "lambda"].includes(id)) {
+      v = snapTo(v, PI / 4);
     }
     setGate((g) => ({ ...g, [id]: v }));
   };
@@ -54,24 +53,6 @@ export default function GateControlPanel({ gate, setGate, angleUnit, setAngleUni
           <label className="block text-sm font-medium mb-2 text-slate-300 text-center">
             Gate Parameters
           </label>
-        )}
-
-        {/* Angle unit toggle */}
-        {showAngleUnitsToggle && (
-          <div className="text-center mb-3">
-            <button
-              className={`btn btn-sm ${angleUnit === "rad" ? "active" : ""}`}
-              onClick={() => { setAngleUnit("rad"); setStatus("Angle unit set to rad."); }}
-            >
-              Radians
-            </button>
-            <button
-              className={`btn btn-sm ml-2 ${angleUnit === "deg" ? "active" : ""}`}
-              onClick={() => { setAngleUnit("deg"); setStatus("Angle unit set to deg."); }}
-            >
-              Degrees
-            </button>
-          </div>
         )}
 
         {/* Parameter sliders */}

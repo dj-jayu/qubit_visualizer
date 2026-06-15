@@ -76,3 +76,11 @@ export function snapAngle(
   }
   return value;
 }
+
+// Soft-lock a value to the nearest multiple of `step`: snaps only when within
+// `threshold` of a multiple, so dragging stays free in between. A small
+// threshold keeps the pull gentle and leaves room for fine values nearby.
+export function snapTo(value, step, threshold = step * 0.12) {
+  const nearest = Math.round(value / step) * step;
+  return Math.abs(value - nearest) < threshold ? nearest : value;
+}

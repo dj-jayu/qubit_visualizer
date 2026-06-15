@@ -178,12 +178,11 @@ export default function App() {
         <div className="grid grid-cols-1 xl:grid-cols-[340px_minmax(0,1fr)] gap-3 flex-1 min-h-0">
           {/* Left controls */}
           <aside className="flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
-            <StateControlPanel init={init} setInit={setInit} presets={presets} onPreset={onPreset} />
+            <StateControlPanel init={init} setInit={setInit} presets={presets} onPreset={onPreset} angleUnit={angleUnit} setAngleUnit={setAngleUnit} />
             <GateControlPanel
               gate={gate}
               setGate={setGate}
               angleUnit={angleUnit}
-              setAngleUnit={setAngleUnit}
               setStatus={setStatus}
             />
           </aside>
